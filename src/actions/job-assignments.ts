@@ -482,15 +482,19 @@ export async function deleteJobAssignment(id: string) {
                 }
             });
             
-            // Her transaction'ı soft delete et
-            for (const pt of personnelTransactions) {
-                await prisma.personnelTransaction.update({
-                    where: { id: pt.id },
+            if (personnelTransactions.length > 0) {
+                const transactionIds = personnelTransactions.map(pt => pt.id);
+
+                // Toplu soft delete
+                await prisma.personnelTransaction.updateMany({
+                    where: { id: { in: transactionIds } },
                     data: { isDeleted: true, deletedAt: new Date() }
                 });
-                
+
                 // Kasa defterinden de sil (ID formatı: ptx-{id})
-                await deleteCashEntry(`ptx-${pt.id}`);
+                for (const txId of transactionIds) {
+                    await deleteCashEntry(`ptx-${txId}`);
+                }
             }
             
             // Adjustment kaydı oluşturma (artık gerek yok, transaction'lar silindi)

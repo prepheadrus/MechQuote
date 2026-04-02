@@ -15,6 +15,7 @@ interface CreateTransactionInput {
     referenceType?: 'Proposal' | 'Invoice' | 'Manual';
     category?: string;
     date?: Date;
+    projectId?: string;
 }
 
 export async function createTransaction(input: CreateTransactionInput) {
