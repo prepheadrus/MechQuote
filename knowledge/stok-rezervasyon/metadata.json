@@ -1,0 +1,12 @@
+{
+    "id":  "stok-rezervasyon",
+    "title":  "Stok Rezervasyon Sistemi",
+    "summary":  "Teklif onay süreci ile entegre, atomik çalışan stok rezervasyon ve geri bırakma mekanizması.",
+    "timestamps":  {
+                       "created":  "2026-02-15T15:30:00Z",
+                       "updated":  "2026-02-15T20:15:00Z"
+                   },
+    "references":  [
+                       "src/actions/proposals.ts"
+                   ]
+}

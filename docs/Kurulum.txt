@@ -1,0 +1,25 @@
+Uygulamanın güncel halini istediğin konuma başarıyla yedekledim.
+
+Yedekleme Bilgileri:
+
+
+Boyut Optimizasyonu: node_modules, .next ve .idx gibi kurulumla tekrar oluşturulabilecek ağır klasörleri hariç tuttum. 
+
+Mevcut veritabanını (dev.db) ise uygulamanın "müstakil" ve çalışmaya hazır olması için dahil ettim.
+
+Uygulamayı Çalıştırmak İçin Gereken Komutlar:
+
+Bu yedeği başka bir yere taşıyıp veya olduğu yerde çalıştırmak istersen, terminalden klasörün içine girip sırasıyla şu komutları çalıştırman yeterlidir:
+
+Bağımlılıkları Kur:
+npm install
+
+Veritabanı İstemcisini Oluştur:
+npx prisma generate
+
+Uygulamayı Başlat:
+Geliştirme Modu: npm run dev
+
+
+Üretim Modu (Daha Hızlı): npm run build ve ardından npm start
+Tüm geliştirmeler ve veriler güvenli bir şekilde yedeklendi. Başka bir işlem yapmamı ister misin?

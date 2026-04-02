@@ -1,0 +1,19 @@
+# Bağımlılıklar ve Build Çıktıları
+node_modules/
+.next/
+dist/
+build/
+release/
+
+# Veritabanı ve Geçici Veriler
+*.db
+*.db-journal
+*.db.backup*
+data/
+src/data/*.json
+*.zip
+*.log
+
+# Çevresel Değişkenler
+.env
+.env.*

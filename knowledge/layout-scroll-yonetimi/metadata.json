@@ -1,0 +1,13 @@
+{
+    "id":  "layout-scroll-yonetimi",
+    "title":  "Layout ve Kaydırma (Scroll) Yönetimi",
+    "summary":  "Uygulama genelindeki kaydırma sorunlarını çözen modüler \u0027per-page scrolling\u0027 stratejisi ve global layout değişiklikleri.",
+    "timestamps":  {
+                       "created":  "2026-02-14T09:39:20Z",
+                       "updated":  "2026-02-15T20:15:00Z"
+                   },
+    "references":  [
+                       "src/components/app/app-layout.tsx",
+                       "app/layout.tsx"
+                   ]
+}

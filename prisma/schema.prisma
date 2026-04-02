@@ -1,0 +1,974 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum ProjeDurumu {
+  SOZLESME_ASAMASI
+  PROJE_PLANLAMA
+  MALZEME_TEDARIK
+  SAHA_MOBILIZASYONU
+  MONTAJ_VE_IMALAT
+  TEST_VE_DEVREYE_ALMA
+  GECICI_KABUL
+  EKSIK_GIDERME
+  PROJE_TAMAMLANDI
+  FATURALANDIRILDI_VE_KAPANDI
+  ASKIYA_ALINDI
+  IPTAL_EDILDI
+}
+
+model Settings {
+  id                        String   @id @default(uuid())
+  companyName               String
+  companyTitle              String?
+  companySlogan             String?
+  logo                      String? // Base64 or path
+  website                   String?
+  email                     String?
+  phoneNumber               String?
+  address                   String?
+  taxOffice                 String?
+  taxNumber                 String?
+  bankAccounts              Json?   // BankAccount[]
+  defaultTermsAndConditions String?
+  defaultVatRate            Float    @default(0.20)
+  monthlyTargetAmount       Float?
+  currency                  String?  @default("TRY")
+  defaultExchangeRateUSD    Float    @default(32.50)
+  defaultExchangeRateEUR    Float    @default(35.00)
+  
+  // Soft Delete
+  isDeleted                 Boolean  @default(false)
+  deletedAt                 DateTime?
+  
+  @@index([isDeleted])
+}
+
+model Customer {
+  id                     String    @id @default(uuid())
+  name                   String
+  email                  String?
+  phone                  String?
+  address                Json?     // Address object
+  taxId                  String?
+  taxOffice              String?
+  status                 String?   @default("Aktif")
+  tags                   Json?     // String[]
+  notes                  String?
+  createdAt              DateTime  @default(now())
+  
+  // Soft Delete
+  isDeleted              Boolean   @default(false)
+  deletedAt              DateTime?
+  
+  // Analytics
+  totalSpending          Float?    @default(0)
+  approvedProposalsCount Int?      @default(0)
+  totalProposalsCount    Int?      @default(0)
+  lastProposalDate       DateTime?
+
+  // Balance Tracking
+  balance                Float     @default(0)
+
+  proposals              Proposal[]
+  interactions           CustomerInteraction[]
+  invoices               Invoice[]
+  transactions           CustomerTransaction[]
+  projects               Project[]
+  
+  // ✅ YENİ: Kasa Defteri E2E - Proje bazlı tahsilatlar
+  projectExpenses        ProjectExpense[]  // Bu müşterinin proje ödemeleri
+
+  @@index([name])
+  @@index([email])
+  @@index([taxId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([name, status])
+  @@index([taxId, name])
+  @@index([isDeleted])
+}
+
+model CustomerTransaction {
+  id          String   @id @default(uuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  amount      Float    // Positive for Debt (Borç), Negative for Payment (Alacak)
+  type        String   // 'Debt' (Borç - Satış), 'Payment' (Tahsilat - Ödeme), 'Credit' (Alacak - İade), 'Opening' (Açılış)
+  description String?
+  date        DateTime @default(now())
+
+  referenceId String?  // ID of Proposal, Invoice, or other linked entity
+  referenceType String? // 'Proposal', 'Invoice', 'Manual'
+
+  category    String?  // 'Sales', 'Collection', 'Refaund', 'Other'
+
+  // ✅ YENİ: Proje İlişkilendirme (Kasa Defteri E2E)
+  projectId   String?  // Hangi proje için ödeme/tahsilat?
+  project     Project? @relation(fields: [projectId], references: [id])
+
+  createdAt   DateTime @default(now())
+  createdBy   String?  // User ID if we had auth
+
+  // Soft Delete
+  isDeleted   Boolean  @default(false)
+  deletedAt   DateTime?
+
+  @@index([isDeleted])
+  @@index([projectId])  // ✅ Proje bazlı sorgular için
+}
+
+model Product {
+  id                      String    @id @default(uuid())
+  code                    String?
+  name                    String
+  brand                   String?
+  model                   String?
+  category                String?
+  description             String?
+  unit                    String?
+  listPrice               Float     @default(0)
+  currency                String    @default("TRY")
+  vatRate                 Float     @default(0.20)
+  basePrice               Float     @default(0)
+  priceIncludesVat        Boolean   @default(false)
+  discountRate            Float?    @default(0)
+  installationTypeId      String?
+  supplierId              String?
+  technicalSpecifications String?
+  brochureUrl             String?
+
+  // Stock Management
+  stockQuantity           Float     @default(0)
+  reservedQuantity        Float     @default(0)
+  minStockLevel           Float     @default(0)
+
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  // Soft Delete
+  isDeleted               Boolean   @default(false)
+  deletedAt               DateTime?
+
+  recipe                  Recipe?
+  purchaseHistory         PurchaseHistory[]
+  stockMovements          StockMovement[]
+  aliases                 ProductAlias[]
+  invoiceItems            InvoiceItem[]
+  proposalItems           ProposalItem[]
+  feedbacks               Feedback[]
+
+  @@index([code])
+  @@index([name])
+  @@index([brand])
+  @@index([category])
+  @@index([supplierId])
+  @@index([createdAt])
+  @@index([name, category])
+  @@index([brand, model])
+  @@index([isDeleted])
+}
+
+model ProductAlias {
+  id          String   @id @default(uuid())
+  supplierId  String?
+  aliasName   String   // Name as it appears on the invoice
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  // Soft Delete
+  isDeleted   Boolean  @default(false)
+  deletedAt   DateTime?
+
+  @@unique([supplierId, aliasName])
+  @@index([isDeleted])
+}
+
+model StockMovement {
+  id            String   @id @default(uuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  quantity      Float    // Positive for IN, Negative for OUT
+  type          String   // 'IN_INVOICE', 'OUT_PROJECT', 'MANUAL_ADJUSTMENT', 'RETURN'
+  date          DateTime @default(now())
+  description   String?
+
+  referenceId   String?  // InvoiceItem ID or ProposalItem ID
+  projectId     String?
+
+  createdAt     DateTime @default(now())
+
+  // Soft Delete
+  isDeleted     Boolean  @default(false)
+  deletedAt     DateTime?
+
+  @@index([isDeleted])
+}
+
+model Supplier {
+  id          String   @id @default(uuid())
+  name        String
+  contactName String?
+  email       String?
+  phone       String?
+  address     String?
+
+  balance     Float    @default(0) // Balance > 0 means we owe Supplier (Borçluyuz), Balance < 0 means Supplier owes us?
+  // Wait, let's use the same logic as Customer for consistency:
+  // Debt (Borç/Debit) = We owe supplier (increases balance)
+  // Payment (Tahsilat/Credit) = We paid supplier (decreases balance)
+
+  // Soft Delete
+  isDeleted   Boolean  @default(false)
+  deletedAt   DateTime?
+
+  transactions     SupplierTransaction[]
+  projectExpenses  ProjectExpense[]
+
+  @@index([isDeleted])
+}
+
+model SupplierTransaction {
+  id          String   @id @default(uuid())
+  supplierId  String
+  supplier    Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  amount      Float    // Positive for Debt (Borç - We bought stuff), Negative for Payment (We paid)
+  type        String   // 'Debt', 'Payment', 'Credit', 'Opening'
+  category    String?
+  description String?
+  date        DateTime @default(now())
+
+  referenceId   String?  // ID of ProjectExpense or Invoice
+  referenceType String?  // 'ProjectExpense', 'Invoice', 'Manual'
+
+  // ✅ YENİ: Proje İlişkilendirme (Kasa Defteri E2E)
+  projectId   String?  // Hangi proje için tedarikçi ödemesi?
+  project     Project? @relation(fields: [projectId], references: [id])
+
+  createdAt   DateTime @default(now())
+
+  // Soft Delete
+  isDeleted   Boolean  @default(false)
+  deletedAt   DateTime?
+
+  @@index([isDeleted])
+  @@index([projectId])  // ✅ Proje bazlı sorgular için
+}
+
+model Personnel {
+  id        String   @id @default(uuid())
+  name      String
+  role      String
+  phone     String?
+  email     String?
+  status    String   @default("Aktif") // 'Aktif' | 'Pasif'
+  dailyRate Float?
+
+  // Soft Delete
+  isDeleted Boolean  @default(false)
+  deletedAt DateTime?
+
+  assignments  JobAssignment[]
+  transactions PersonnelTransaction[]
+  balance     Float      @default(0)
+  
+  // ✅ YENİ: Kasa Defteri E2E - Proje bazlı personel ödemeleri
+  projectExpenses ProjectExpense[]
+
+  @@index([isDeleted])
+}
+
+/**
+ * DraftProposal - Akıllı Teklif Sihirbazı taslakları
+ * Kullanıcılar AI analizi yaparken ilerlemeyi server'da saklar
+ * LocalStorage'dan daha güvenilir, cihazlar arası senkronizasyon
+ */
+model DraftProposal {
+  id                 String   @id @default(uuid())
+  
+  // Identity
+  title              String?  // "Ahmet Bey - Kombi Teklifi"
+  description        String?  // Notlar
+  
+  // Customer Info
+  customerId         String?  // İlişkili müşteri
+  customerName       String?  // Snapshot (müşteri silinse bile)
+  
+  // Tags/Etiketler
+  tags               String?  // JSON: ["kombi", "acil", "vip"]
+  
+  // Draft Content
+  inputText          String?  // WhatsApp/PDF metni
+  draftItems         Json?    // DraftItem[] - eşleşme ilerlemesi
+  step               String   @default("input") // input | match
+  
+  // Status
+  status             String   @default("draft") // draft | converted | archived
+  convertedToProposalId String? // Hangi teklife dönüştü
+  
+  // Metadata
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  expiresAt          DateTime // 30 gün sonra silinir
+  
+  // Soft Delete
+  isDeleted          Boolean  @default(false)
+  deletedAt          DateTime?
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@index([isDeleted])
+}
+
+model Proposal {
+  id                 String   @id @default(uuid())
+  rootProposalId     String?  // For versioning
+  version            Int      @default(1)
+  status             String   @default("Draft")
+  quoteNumber        String   @unique
+  customerName       String
+
+  customerId         String
+  customer           Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  projectName        String
+  totalAmount        Float    @default(0)
+  exchangeRateUSD    Float    @default(0)
+  exchangeRateEUR    Float    @default(0)
+
+  createdAt          DateTime @default(now())
+  versionNote        String?
+  termsAndConditions String?
+  tags               String?  // Comma separated
+
+  // Soft Delete
+  isDeleted          Boolean  @default(false)
+  deletedAt          DateTime?
+
+  items              ProposalItem[]
+  jobAssignments     JobAssignment[]
+  supplierQuotes     SupplierQuote[]
+
+  projectId          String?
+  project            Project? @relation("ProjectProposals", fields: [projectId], references: [id])
+
+  // Back-reference for projects where this proposal is the basis
+  linkedInProjects   Project[] @relation("LinkedProposal")
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([customerId])
+  @@index([customerId, status])
+  @@index([projectId, status])
+  @@index([isDeleted])
+}
+
+model ProposalItem {
+  id               String   @id @default(uuid())
+  proposalId       String
+  proposal         Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  productId        String?
+  product          Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  name             String
+  brand            String?
+  model            String?
+  quantity         Float
+  unit             String?
+  listPrice        Float
+  currency         String   @default("TRY")
+  discountRate     Float    @default(0)
+  profitMargin     Float    @default(0)
+  groupName        String?
+  groupDescription String?
+  basePrice        Float    @default(0)
+  vatRate          Float    @default(0.20)
+  priceIncludesVat Boolean  @default(false)
+  orderIndex       Int      @default(0)
+
+  // Soft Delete
+  isDeleted        Boolean  @default(false)
+  deletedAt        DateTime?
+
+  @@index([isDeleted])
+}
+
+model JobAssignment {
+  id             String   @id @default(uuid())
+  proposalId     String?
+  proposal       Proposal? @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  projectId      String?
+  project        Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  personnelId    String
+  personnel      Personnel @relation(fields: [personnelId], references: [id], onDelete: Cascade)
+
+  assignedAmount Float
+  notes          String?
+  paymentStatus  String   @default("Ödenmedi") // 'Ödenmedi' | 'Kısmi Ödendi' | 'Ödendi'
+  assignedAt     DateTime @default(now())
+  paymentHistory Json?    // PaymentRecord[]
+
+  // Soft Delete
+  isDeleted      Boolean  @default(false)
+  deletedAt      DateTime?
+
+  @@index([isDeleted])
+}
+
+model CustomerInteraction {
+  id          String   @id @default(uuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  content     String
+  type        String   // 'note' | 'email' | 'phone' | 'meeting'
+  authorName  String
+  createdAt   DateTime @default(now())
+
+  // Soft Delete
+  isDeleted   Boolean  @default(false)
+  deletedAt   DateTime?
+
+  @@index([isDeleted])
+}
+
+model Recipe {
+  id          String   @id @default(uuid())
+  productId   String   @unique
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // Soft Delete
+  isDeleted   Boolean  @default(false)
+  deletedAt   DateTime?
+
+  recipeItems RecipeItem[]
+
+  @@index([isDeleted])
+}
+
+model RecipeItem {
+  id        String @id @default(uuid())
+  recipeId  String
+  recipe    Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  type      String // 'material' or 'labor'
+  itemId    String // ID of the Product or LaborCost
+  name      String
+  quantity  Float
+  unit      String?
+  cost      Float
+
+  orderIndex Int @default(0)
+
+  // Soft Delete
+  isDeleted Boolean  @default(false)
+  deletedAt DateTime?
+
+  @@index([isDeleted])
+}
+
+model Template {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  items       Json     // ProposalItem[]
+  createdAt   DateTime @default(now())
+
+  // Soft Delete
+  isDeleted   Boolean  @default(false)
+  deletedAt   DateTime?
+
+  @@index([isDeleted])
+}
+
+model InstallationType {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  parentId    String?
+  price       Float    @default(0)
+  currency    String   @default("TRY")
+
+  // Soft Delete
+  isDeleted   Boolean  @default(false)
+  deletedAt   DateTime?
+
+  // We can add relation to items if needed, but keeping it simple for now
+
+  @@index([isDeleted])
+}
+
+model MonthlyTarget {
+  id           String   @id @default(uuid())
+  year         Int
+  month        Int
+  targetAmount Float
+  currency     String   @default("TRY")
+  updatedAt    DateTime @default(now())
+
+  // Soft Delete
+  isDeleted    Boolean  @default(false)
+  deletedAt    DateTime?
+
+  @@unique([year, month])
+  @@index([isDeleted])
+}
+
+model LaborCost {
+  id   String @id @default(uuid())
+  role String
+  cost Float
+  unit String
+
+  // Soft Delete
+  isDeleted Boolean  @default(false)
+  deletedAt DateTime?
+
+  @@index([isDeleted])
+}
+
+model Invoice {
+  id                  String   @id @default(uuid())
+  type                String
+  customerId          String?
+  customer            Customer? @relation(fields: [customerId], references: [id])
+
+  senderName          String?
+  receiverName        String?
+  senderTaxId         String?
+  invoiceNumber       String
+  ettsn               String?
+  invoiceDate         DateTime
+  dueDate             DateTime?
+  currency            String   @default("TRY")
+  totalAmount         Float
+  subTotal            Float?
+  totalDiscountAmount Float?
+  totalTaxAmount      Float?
+  taxInclusiveTotal   Float?
+
+  pdfFileBlob         Bytes?   // For storing file content
+  status              String   @default("Draft")
+  createdAt           DateTime @default(now())
+
+  // Soft Delete
+  isDeleted           Boolean  @default(false)
+  deletedAt           DateTime?
+  
+  // ✅ YENİ: İptal Bilgisi (Fatura İptal Sistemi)
+  deletedBy           String?
+  deleteReason        String?
+  cancelType          String?  // "soft" | "hard"
+  cancelledModules    Json?    // ["projects", "customerBalance", "stock"]
+
+  items               InvoiceItem[]
+  purchaseHistory     PurchaseHistory[]
+
+  projectId           String?
+  project             Project? @relation(fields: [projectId], references: [id])
+
+  payments            Payment[]
+
+  @@index([type])
+  @@index([customerId])
+  @@index([senderName])
+  @@index([senderTaxId])
+  @@index([invoiceNumber])
+  @@index([ettsn])
+  @@index([invoiceDate])
+  @@index([dueDate])
+  @@index([status])
+  @@index([createdAt])
+  @@index([type, status])
+  @@index([customerId, type])
+  @@index([invoiceNumber, type])
+  @@index([isDeleted])
+  @@index([deletedAt])
+}
+
+model InvoiceItem {
+  id              String   @id @default(uuid())
+  invoiceId       String
+  invoice         Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  name            String
+  quantity        Float
+  unitPrice       Float
+  totalPrice      Float
+  taxRate         Float?
+  taxAmount       Float?
+  discountAmount  Float?
+  unit            String?
+  listPrice       Float?
+  discountRate    Float?
+  linkedProductId String?  // ID of product
+  product         Product? @relation(fields: [linkedProductId], references: [id], onDelete: SetNull)
+
+  projectId       String?
+  project         Project? @relation(fields: [projectId], references: [id])
+
+  // Soft Delete
+  isDeleted       Boolean  @default(false)
+  deletedAt       DateTime?
+  
+  // ✅ YENİ: Satın Alma Verisi (KORUMA - Fatura silinse bile kaybolmaz)
+  supplierName    String?  // Tedarikçi adı
+  invoiceDate     DateTime? // Fatura tarihi (snapshot)
+  netPrice        Float?   // İskonto sonrası net fiyat
+  
+  // ✅ YENİ: İptal Bilgisi
+  cancelledAt     DateTime?
+  cancelReason    String?
+
+  @@index([isDeleted])
+  @@index([deletedAt])
+  @@index([cancelledAt])
+}
+
+model PurchaseHistory {
+  id           String   @id @default(uuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+
+  supplierId   String?
+  supplierName String?
+  date         DateTime
+  listPrice    Float
+  discountRate Float
+  netPrice     Float
+  currency     String   @default("TRY")
+
+  invoiceId    String?
+  invoice      Invoice? @relation(fields: [invoiceId], references: [id])
+
+  // Soft Delete
+  isDeleted    Boolean  @default(false)
+  deletedAt    DateTime?
+
+  @@index([isDeleted])
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  status      ProjeDurumu @default(SOZLESME_ASAMASI)
+  address     String?  // Site address
+
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+
+  contractAmount Float?   @default(0)
+  currency    String    @default("TRY")
+
+  // Manual Estimation Overrides
+  estimatedMaterialCost Float? @default(0)
+  estimatedLaborCost    Float? @default(0)
+
+  linkedProposalId String?
+  linkedProposal   Proposal? @relation("LinkedProposal", fields: [linkedProposalId], references: [id])
+
+  notes       String?
+  tags        String?   // Comma separated
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Soft Delete
+  isDeleted   Boolean  @default(false)
+  deletedAt   DateTime?
+
+  invoices    Invoice[]
+  invoiceItems InvoiceItem[]
+  proposals      Proposal[] @relation("ProjectProposals")
+  transactions   ProjectExpense[]
+  jobAssignments JobAssignment[]
+  personnelTransactions PersonnelTransaction[]
+  statusHistory  ProjectStatusHistory[]
+  
+  // ✅ YENİ: Kasa Defteri E2E İlişkileri
+  customerTransactions CustomerTransaction[]  // Müşteri ödemeleri (bu projeye ait)
+  supplierTransactions SupplierTransaction[]  // Tedarikçi ödemeleri (bu projeye ait)
+
+  @@index([name])
+  @@index([status])
+  @@index([customerId])
+  @@index([createdAt])
+  @@index([customerId, status])
+  @@index([status, createdAt])
+  @@index([name, customerId])
+  @@index([isDeleted])
+}
+
+model ProjectStatusHistory {
+  id        String      @id @default(uuid())
+  projectId String
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status    ProjeDurumu
+  note      String?
+  date      DateTime    @default(now())
+  createdAt DateTime    @default(now())
+
+  // Soft Delete
+  isDeleted Boolean     @default(false)
+  deletedAt DateTime?
+
+  @@index([isDeleted])
+}
+
+model ProjectExpense {
+  id          String   @id @default(uuid())
+  description String
+  amount      Float
+  date        DateTime @default(now())
+  category    String
+  type        String   @default("Expense") // 'Expense' | 'Income'
+
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  supplierId  String?
+  supplier    Supplier? @relation(fields: [supplierId], references: [id])
+
+  // ✅ YENİ: Müşteri/Tedarikçi İlişkilendirme (Kasa Defteri E2E)
+  customerId  String?  // Hangi müşteri ödedi? (Tahsilat için)
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  
+  personnelId String?  // Hangi personel aldı? (Personel ödemesi için)
+  personnel   Personnel? @relation(fields: [personnelId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Soft Delete
+  isDeleted   Boolean  @default(false)
+  deletedAt   DateTime?
+
+  @@index([isDeleted])
+  @@index([customerId])  // ✅ Müşteri bazlı sorgular için
+  @@index([personnelId])  // ✅ Personel bazlı sorgular için
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  amount      Float
+  date        DateTime @default(now())
+  note        String?
+  method      String   @default("Bank Transfer") // 'Bank Transfer', 'Cash', 'Check', 'Credit Card'
+
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Soft Delete
+  isDeleted   Boolean  @default(false)
+  deletedAt   DateTime?
+
+  @@index([isDeleted])
+}
+
+model SupplierQuote {
+  id           String   @id @default(uuid())
+  supplierId   String?
+  supplierName String
+  proposalId   String
+  proposal     Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  date         DateTime @default(now())
+  items        SupplierQuoteItem[]
+
+  // Soft Delete
+  isDeleted    Boolean  @default(false)
+  deletedAt    DateTime?
+
+  @@index([isDeleted])
+}
+
+model SupplierQuoteItem {
+  id              String   @id @default(uuid())
+  supplierQuoteId String
+  supplierQuote   SupplierQuote @relation(fields: [supplierQuoteId], references: [id], onDelete: Cascade)
+  productId       String?
+  name            String
+  price           Float
+  currency        String   @default("TRY")
+
+  // Soft Delete
+  isDeleted       Boolean  @default(false)
+  deletedAt       DateTime?
+
+  @@index([isDeleted])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String
+  entityType  String
+  entityId    String?
+  details     String?
+  userId      String?
+  username    String?
+  createdAt   DateTime @default(now())
+
+  // Soft Delete
+  isDeleted   Boolean  @default(false)
+  deletedAt   DateTime?
+
+  @@index([action, entityType])
+  @@index([createdAt])
+  @@index([isDeleted])
+}
+
+model PersonnelTransaction {
+  id          String   @id @default(uuid())
+  personnelId String
+  personnel   Personnel @relation(fields: [personnelId], references: [id], onDelete: Cascade)
+
+  amount      Float    // Positive for Debt (Borç - We paid them), Negative for Credit (Hakediş - They worked)
+  // Standard Personnel Ledger:
+  // Debt (Borç/Debit) = Our Payment to Team (Team owes us work)
+  // Credit (Alacak/Credit) = Team's Earnings/Work (We owe payment to Team)
+
+  type        String   // 'Payment' (Ödeme/Avans), 'Earning' (Hakediş), 'DebtTransfer' (Borç Devri)
+  category    String?  // 'Avans', 'Maaş', 'Hakediş', 'Prim'
+  description String?
+  date        DateTime @default(now())
+
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id])
+
+  referenceId String?  // ID of JobAssignment or other linked entity
+
+  createdAt   DateTime @default(now())
+
+  // Soft Delete
+  isDeleted   Boolean  @default(false)
+  deletedAt   DateTime?
+
+  @@index([isDeleted])
+}
+
+/**
+ * AI Cache - Fatura hash'lerini ve AI sonuçlarını saklar
+ * Aynı fatura 2. kez AI'a gönderilmez (30 gün cache)
+ */
+model AICache {
+  id          String   @id @default(uuid())
+  fileHash    String   @unique // SHA256 hash of PDF
+  fileType    String   // 'invoice', 'proposal', 'product'
+
+  // AI Result
+  result      String   // JSON string (parsed invoice data)
+  confidence  Float    @default(1.0) // AI confidence score
+
+  // Usage Tracking
+  apiKeyUsed  String?  // Hangi API key kullanıldı (son 4 karakter)
+  provider    String   @default("gemini") // gemini, qwen, glm, kimi
+
+  // Expiration
+  expiresAt   DateTime // 30 gün sonra silinir
+
+  createdAt   DateTime @default(now())
+
+  // Soft Delete
+  isDeleted   Boolean  @default(false)
+  deletedAt   DateTime?
+
+  @@index([fileHash])
+  @@index([expiresAt])
+  @@index([isDeleted])
+}
+
+/**
+ * API Key Rotasyonu - Kullanıcının birden fazla API key'i saklanır
+ */
+model APIKey {
+  id          String   @id @default(uuid())
+  name        String   // Kullanıcının verdiği isim (örn: "Ana Key", "Yedek 1")
+  provider    String   // gemini, openrouter, qwen, glm, kimi
+
+  keyHash     String   @unique // Güvenlik için hash'lenmiş key (ilk 8 + son 4 karakter)
+  isActive    Boolean  @default(true)
+
+  // Usage Stats
+  usageCount  Int      @default(0) // Kaç kez kullanıldı
+  lastUsedAt  DateTime?
+
+  // Rate Limiting
+  dailyLimit  Int      @default(1000) // Günlük limit
+  todayCount  Int      @default(0)    // Bugünkü kullanım
+  resetDate   DateTime? // Sayaç sıfırlama tarihi
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Soft Delete
+  isDeleted   Boolean  @default(false)
+  deletedAt   DateTime?
+
+  @@index([provider])
+  @@index([isActive])
+  @@index([isDeleted])
+}
+
+/**
+ * User Feedback - Kullanıcı eşleştirme onayları/redleri
+ * Matching system'in öğrenmesi için kullanılır
+ */
+model Feedback {
+  id          String   @id @default(uuid())
+
+  // Invoice Item
+  invoiceItemId String
+  invoiceItemName String // Snapshot (ürün adı değişebilir)
+
+  // Matched Product
+  productId   String
+  productName String // Snapshot
+  product     Product? @relation(fields: [productId], references: [id])
+
+  // Feedback Type
+  type        String   // 'approved' (onaylandı), 'rejected' (reddedildi), 'corrected' (düzeltildi)
+
+  // Original Match (eğer varsa)
+  originalMatchId String? // İlk önerilen ürün (rejected/corrected için)
+  originalMatchName String?
+
+  // User Info
+  userId      String?  // Gelecekte auth için
+  sessionId   String?  // Anonymous session tracking
+
+  // Context
+  confidence  Float?   // Matching confidence score
+  method      String?  // Matching method (string, ai-semantic, code-match, etc.)
+
+  createdAt   DateTime @default(now())
+
+  // Soft Delete
+  isDeleted   Boolean  @default(false)
+  deletedAt   DateTime?
+
+  @@index([invoiceItemName])
+  @@index([productId])
+  @@index([type])
+  @@index([invoiceItemName, productId])
+  @@index([isDeleted])
+}

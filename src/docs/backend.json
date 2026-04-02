@@ -1,0 +1,640 @@
+
+{
+  "entities": {
+    "ProductNote": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ProductNote",
+      "type": "object",
+      "description": "Represents a note or comment related to a product.",
+      "properties": {
+        "productId": { "type": "string", "description": "The ID of the product this note belongs to." },
+        "content": { "type": "string", "description": "The text content of the note." },
+        "authorId": { "type": "string", "description": "The ID of the user who created the note." },
+        "authorName": { "type": "string", "description": "The name of the user who created the note." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of creation." }
+      },
+      "required": ["productId", "content", "authorId", "createdAt"]
+    },
+    "CustomerInteraction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CustomerInteraction",
+      "type": "object",
+      "description": "Represents a single interaction or note related to a customer.",
+      "properties": {
+        "customerId": {
+          "type": "string",
+          "description": "The ID of the customer this interaction belongs to."
+        },
+        "content": {
+          "type": "string",
+          "description": "The text content of the note or interaction summary."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of interaction.",
+          "enum": ["note", "email", "phone"]
+        },
+        "authorId": {
+          "type": "string",
+          "description": "The ID of the user who created the interaction."
+        },
+        "authorName": {
+          "type": "string",
+          "description": "The name of the user who created the interaction."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the interaction was created."
+        }
+      },
+      "required": ["customerId", "content", "type", "authorId", "createdAt"]
+    },
+    "LaborCost": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LaborCost",
+      "type": "object",
+      "description": "Represents the cost of a specific type of labor.",
+      "properties": {
+        "role": {
+          "type": "string",
+          "description": "The name or role of the labor (e.g., Usta Yevmiye, Kaynak İşçiliği)."
+        },
+        "cost": {
+          "type": "number",
+          "description": "The cost for the specified unit of labor."
+        },
+        "unit": {
+          "type": "string",
+          "description": "The unit of measurement for the labor cost (e.g., Gün, Saat, İş)."
+        }
+      },
+      "required": [
+        "role",
+        "cost",
+        "unit"
+      ]
+    },
+    "Recipe": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Recipe",
+      "type": "object",
+      "description": "Defines the materials and labor required to produce a single unit of a product.",
+      "properties": {
+        "productId": {
+          "type": "string",
+          "description": "The ID of the product this recipe is for. (Links to a Product document)"
+        },
+        "recipeItems": {
+          "type": "array",
+          "description": "A list of materials and labor that make up the product.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "The type of the item, either 'material' or 'labor'.",
+                "enum": ["material", "labor"]
+              },
+              "itemId": {
+                "type": "string",
+                "description": "The ID of the Product (acting as material) or LaborCost document."
+              },
+              "quantity": {
+                "type": "number",
+                "description": "The quantity of the material or the number of labor units."
+              }
+            },
+            "required": ["type", "itemId", "quantity"]
+          }
+        }
+      },
+      "required": [
+        "productId",
+        "recipeItems"
+      ]
+    },
+    "Template": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Template",
+      "type": "object",
+      "description": "Represents a reusable proposal template, like 'Boiler Installation'.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the template (e.g., 'Kombi Montajı')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of what the template includes."
+        }
+      },
+      "required": ["name"]
+    },
+    "TemplateItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "TemplateItem",
+      "type": "object",
+      "description": "Represents an individual item within a proposal template.",
+      "properties": {
+        "productId": {
+          "type": "string",
+          "description": "Reference to the Product."
+        },
+        "name": {
+          "type": "string",
+          "description": "Denormalized name of the product."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The default quantity for this item in the template."
+        },
+        "unit": {
+          "type": "string",
+          "description": "Denormalized unit of the product."
+        },
+        "groupName": {
+            "type": "string",
+            "description": "The name of the group this item belongs to within the template."
+        },
+        "orderIndex": {
+            "type": "number",
+            "description": "The order of the item in the template list."
+        }
+      },
+      "required": ["productId", "name", "quantity", "unit"]
+    },
+    "Proposal": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Proposal",
+      "type": "object",
+      "description": "Represents a quotation or proposal. Can be a new proposal or a revision of an existing one.",
+      "properties": {
+        "rootProposalId": {
+          "type": "string",
+          "description": "The ID of the original proposal in a revision chain. Used to group all versions of a proposal."
+        },
+        "version": {
+          "type": "number",
+          "description": "The version number of this specific proposal in the chain (e.g., 1, 2, 3)."
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Reference to the Customer who the proposal is for."
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Denormalized name of the customer for quick display."
+        },
+        "projectName": {
+          "type": "string",
+          "description": "The name of the project this proposal is for."
+        },
+        "quoteNumber": {
+          "type": "string",
+          "description": "The unique, formatted quote number (e.g., 072024/001)."
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Grand total amount of the proposal in the base currency (TRY)."
+        },
+        "exchangeRates": {
+          "type": "object",
+          "properties": {
+            "USD": {
+              "type": "number"
+            },
+            "EUR": {
+              "type": "number"
+            }
+          },
+          "description": "Exchange rates (USD, EUR to TRY) used at the time of proposal creation."
+        },
+        "versionNote": {
+          "type": "string",
+          "description": "A note describing the changes in this version of the proposal."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the proposal (e.g., Draft, Approved, Sent).",
+          "enum": [
+            "Draft",
+            "Sent",
+            "Approved",
+            "Rejected"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Date and time when the proposal was created.",
+          "format": "date-time"
+        },
+        "termsAndConditions": {
+            "type": "string",
+            "description": "Custom terms and conditions for the proposal, can be a multiline text."
+        }
+      },
+      "required": [
+        "rootProposalId",
+        "version",
+        "customerId",
+        "customerName",
+        "projectName",
+        "quoteNumber",
+        "totalAmount",
+        "status",
+        "createdAt"
+      ]
+    },
+    "ProposalItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ProposalItem",
+      "type": "object",
+      "description": "Represents an individual item within a proposal.",
+      "properties": {
+        "proposalId": {
+          "type": "string",
+          "description": "Reference to the parent Proposal."
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to the Product."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the product at the time of adding."
+        },
+        "brand": {
+          "type": "string",
+          "description": "Brand of the product."
+        },
+        "model": {
+          "type": "string",
+          "description": "Model of the product."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity of the product in the proposal item."
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of the product."
+        },
+        "listPrice": {
+          "type": "number",
+          "description": "Original list price for the item."
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency of the list price."
+        },
+        "discountRate": {
+          "type": "number",
+          "description": "Discount rate applied to the list price."
+        },
+        "profitMargin": {
+          "type": "number",
+          "description": "Profit margin applied for this item."
+        },
+        "orderIndex": {
+            "type": "number",
+            "description": "The order of the item in the proposal list."
+        },
+        "basePrice": {
+          "type": "number",
+          "description": "Calculated cost of the item in its original currency."
+        },
+        "vatRate": {
+          "type": "number",
+          "description": "VAT rate for the product (e.g., 0.20 for 20%)."
+        },
+        "priceIncludesVat": {
+          "type": "boolean",
+          "description": "Whether the listPrice included VAT."
+        },
+        "status": {
+            "type": "string",
+            "description": "Denormalized status from the parent proposal for efficient querying.",
+            "enum": [ "Draft", "Sent", "Approved", "Rejected" ]
+        }
+      },
+      "required": [
+        "proposalId",
+        "productId",
+        "name",
+        "quantity",
+        "listPrice",
+        "currency",
+        "discountRate",
+        "profitMargin",
+        "orderIndex"
+      ]
+    },
+    "Customer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Customer",
+      "type": "object",
+      "description": "Represents a customer.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the customer."
+        },
+        "email": {
+          "type": "string",
+          "description": "Contact email address for the customer.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number for the customer."
+        },
+        "address": {
+          "type": "object",
+          "description": "Structured address of the customer.",
+          "properties": {
+            "city": { "type": "string", "description": "City (İl)." },
+            "district": { "type": "string", "description": "District (İlçe)." },
+            "neighborhood": { "type": "string", "description": "Neighborhood (Mahalle)." },
+            "street": { "type": "string", "description": "Street (Cadde)." },
+            "buildingName": { "type": "string", "description": "Building or Complex Name (Site/Apartman Adı)." },
+            "buildingNumber": { "type": "string", "description": "Building Number (Bina Numarası)." },
+            "apartmentNumber": { "type": "string", "description": "Apartment Number (Daire Numarası)." },
+            "postalCode": { "type": "string", "description": "Postal code." }
+          }
+        },
+        "taxNumber": {
+          "type": "string",
+          "description": "Tax identification number for the customer."
+        },
+        "status": {
+            "type": "string",
+            "description": "The status of the customer.",
+            "enum": ["Aktif", "Pasif"]
+        },
+        "tags": {
+          "type": "array",
+          "description": "A list of tags for segmenting the customer.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "keywords": {
+            "type": "array",
+            "description": "An array of searchable keywords generated from customer data for server-side search.",
+            "items": {
+                "type": "string"
+            }
+        }
+      },
+      "required": [
+        "name",
+        "email",
+        "status"
+      ]
+    },
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product, material, or service offered.",
+      "properties": {
+        "code": { "type": "string", "description": "Unique code for the product." },
+        "name": { "type": "string", "description": "Name of the product." },
+        "brand": { "type": "string", "description": "Brand of the product." },
+        "model": { "type": "string", "description": "Model of the product." },
+        "description": { "type": "string", "description": "A detailed description of the product, supports Markdown." },
+        "technicalSpecifications": { "type": "string", "description": "Technical specs of the product, supports Markdown." },
+        "brochureUrl": { "type": "string", "description": "A URL to a PDF brochure or technical document." },
+        "unit": { "type": "string", "description": "Unit of measurement (e.g., Adet, Mt)." },
+        "category": { "type": "string", "description": "General category (e.g., Heating, Cooling)." },
+        "installationTypeId": { "type": "string", "description": "Reference to the InstallationType." },
+        "listPrice": { "type": "number", "description": "List price for sales." },
+        "currency": { "type": "string", "description": "Currency for prices (e.g., TL, USD, EUR)." },
+        "discountRate": { "type": "number", "description": "Default sales discount rate (0 to 1)." },
+        "basePrice": { "type": "number", "description": "Base cost/purchase price of the material." },
+        "supplierId": { "type": "string", "description": "Reference to the Supplier." },
+        "vatRate": { "type": "number", "description": "VAT rate for the product (e.g., 0.20 for 20%)." },
+        "priceIncludesVat": { "type": "boolean", "description": "Whether the listPrice and basePrice include VAT." }
+      },
+      "required": [
+        "code",
+        "name",
+        "brand",
+        "vatRate"
+      ]
+    },
+    "Supplier": {
+      "$schema": "http://json-schema.org/draft-07-schema#",
+      "title": "Supplier",
+      "type": "object",
+      "description": "Represents a supplier of materials.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the supplier."
+        },
+        "contactEmail": {
+          "type": "string",
+          "description": "Contact email for the supplier.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "InstallationType": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "InstallationType",
+      "type": "object",
+      "description": "Represents a type of mechanical installation discipline, supporting a hierarchical structure.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the installation category (e.g., 'Sıhhi Tesisat', 'Vitrifiye', 'Lavabolar')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the installation category."
+        },
+        "parentId": {
+          "type": ["string", "null"],
+          "description": "The ID of the parent category. A null value indicates a top-level main discipline."
+        }
+      },
+      "required": ["name"]
+    },
+    "Personnel": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Personnel",
+      "type": "object",
+      "description": "Represents a worker, technician, or master (Usta).",
+      "properties": {
+        "name": { "type": "string", "description": "Full name of the personnel." },
+        "role": { "type": "string", "description": "The primary role or title (e.g., Usta, Kalfa, Tesisatçı)." },
+        "phone": { "type": "string", "description": "Contact phone number." },
+        "email": { "type": "string", "format": "email", "description": "Contact email address." },
+        "status": { "type": "string", "enum": ["Aktif", "Pasif"], "description": "Current status of the personnel."}
+      },
+      "required": ["name", "role", "status"]
+    },
+    "JobAssignment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "JobAssignment",
+      "type": "object",
+      "description": "Links an approved proposal to a personnel member and tracks payment.",
+      "properties": {
+        "proposalId": { "type": "string", "description": "The ID of the approved proposal." },
+        "personnelId": { "type": "string", "description": "The ID of the assigned personnel." },
+        "assignedAmount": { "type": "number", "description": "The agreed payment amount for this job." },
+        "paymentStatus": { "type": "string", "enum": ["Ödenmedi", "Kısmi Ödendi", "Ödendi"], "description": "Status of the payment." },
+        "notes": { "type": "string", "description": "Notes regarding the assignment or payment." },
+        "assignedAt": { "type": "string", "format": "date-time", "description": "Timestamp of when the job was assigned." }
+      },
+      "required": ["proposalId", "personnelId", "assignedAmount", "paymentStatus", "assignedAt"]
+    },
+    "AppSettings": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "AppSettings",
+        "type": "object",
+        "description": "Stores global settings for the application.",
+        "properties": {
+            "monthlyTargetAmount": {
+                "type": "number",
+                "description": "The monthly sales target amount for the dashboard."
+            }
+        },
+        "required": ["monthlyTargetAmount"]
+    }
+  },
+  "auth": {
+    "providers": []
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/suppliers/{supplierId}",
+        "definition": {
+          "entityName": "Supplier",
+          "schema": { "$ref": "#/backend/entities/Supplier" },
+          "description": "Represents a supplier of materials."
+        }
+      },
+      {
+        "path": "/labor_costs/{laborCostId}",
+        "definition": {
+          "entityName": "LaborCost",
+          "schema": { "$ref": "#/backend/entities/LaborCost" },
+          "description": "Represents the cost of labor for a specific role."
+        }
+      },
+      {
+        "path": "/recipes/{recipeId}",
+        "definition": {
+          "entityName": "Recipe",
+          "schema": { "$ref": "#/backend/entities/Recipe" },
+          "description": "Represents a recipe or bill of materials for a product."
+        }
+      },
+      {
+        "path": "/templates/{templateId}",
+        "definition": {
+          "entityName": "Template",
+          "schema": { "$ref": "#/backend/entities/Template" },
+          "description": "Stores reusable proposal templates."
+        }
+      },
+       {
+        "path": "/templates/{templateId}/template_items/{templateItemId}",
+        "definition": {
+          "entityName": "TemplateItem",
+          "schema": { "$ref": "#/backend/entities/TemplateItem" },
+          "description": "Represents an individual line item within a specific template."
+        }
+      },
+      {
+        "path": "/customers/{customerId}",
+        "definition": {
+          "entityName": "Customer",
+          "schema": { "$ref": "#/backend/entities/Customer" },
+          "description": "Represents a customer."
+        }
+      },
+      {
+        "path": "/customers/{customerId}/interactions/{interactionId}",
+        "definition": {
+          "entityName": "CustomerInteraction",
+          "schema": { "$ref": "#/backend/entities/CustomerInteraction" },
+          "description": "Stores all interactions and notes for a specific customer."
+        }
+      },
+      {
+        "path": "/proposals/{proposalId}",
+        "definition": {
+          "entityName": "Proposal",
+          "schema": { "$ref": "#/backend/entities/Proposal" },
+          "description": "Represents a proposal document."
+        }
+      },
+      {
+        "path": "/proposals/{proposalId}/proposal_items/{proposalItemId}",
+        "definition": {
+          "entityName": "ProposalItem",
+          "schema": { "$ref": "#/backend/entities/ProposalItem" },
+          "description": "Represents an individual line item within a specific proposal."
+        }
+      },
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": { "$ref": "#/backend/entities/Product" },
+          "description": "Represents a product, material, or service."
+        }
+      },
+      {
+        "path": "/products/{productId}/notes/{noteId}",
+        "definition": {
+          "entityName": "ProductNote",
+          "schema": { "$ref": "#/backend/entities/ProductNote" },
+          "description": "Stores notes and comments for a specific product."
+        }
+      },
+      {
+        "path": "/installation_types/{installationTypeId}",
+        "definition": {
+          "entityName": "InstallationType",
+          "schema": { "$ref": "#/backend/entities/InstallationType" },
+          "description": "Stores the different disciplines of mechanical installations."
+        }
+      },
+      {
+        "path": "/personnel/{personnelId}",
+        "definition": {
+          "entityName": "Personnel",
+          "schema": { "$ref": "#/backend/entities/Personnel" },
+          "description": "Stores information about workers (ustalar)."
+        }
+      },
+      {
+        "path": "/job_assignments/{assignmentId}",
+        "definition": {
+          "entityName": "JobAssignment",
+          "schema": { "$ref": "#/backend/entities/JobAssignment" },
+          "description": "Tracks job assignments to personnel and their payments."
+        }
+      },
+      {
+        "path": "/app_settings/{settingsId}",
+        "definition": {
+          "entityName": "AppSettings",
+          "schema": { "$ref": "#/backend/entities/AppSettings" },
+          "description": "Stores global application settings. Should contain a single document with a known ID e.g. 'dashboard'."
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is simplified by merging 'Materials' into 'Products'. Now, the `products` collection serves as the master list for all sellable or costed items. The `suppliers` collection remains to manage vendor information. The 'Recipe' and 'LaborCost' concepts have been added to support creating bill-of-materials style product assemblies."
+  }
+}
+

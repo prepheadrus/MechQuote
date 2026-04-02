@@ -1,0 +1,12 @@
+{
+    "title": "Proje Yaşam Döngüsü ve Durum Yönetimi",
+    "summary": "Projelerin teklif aşamasından faturalandırmaya kadar olan 12 teknik aşamasının yönetimi, UI gösterimi ve backend filtreleme mantığı.",
+    "category": "Architecture",
+    "tags": [
+        "Prisma",
+        "Enum",
+        "Project Lifecycle",
+        "UI Components"
+    ],
+    "lastUpdated": "2026-02-18T21:23:00Z"
+}

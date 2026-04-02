@@ -1,0 +1,201 @@
+# MECHQUOTE - PROJE KURALLARI VE DAVRANIŞ PRENSİPLERİ
+
+## 1. PROJE KİMLİĞİ VE BAĞLAM (CONTEXT)
+- **Proje Adı:** MechQuote (Mekanik Teklif ve Mini-ERP Sistemi)
+- **Teknoloji Yığını:** Next.js 15 (App Router), TypeScript, Prisma, SQLite, Tailwind CSS, shadcn/ui.
+- **Temel Mantık:** Tüm maliyet hesaplamaları `src/lib/pricing.ts` üzerinden yürütülür. PDF işlemleri koordinat tabanlıdır.
+- **Kritik Dosyalar:** Her zaman `prisma/schema.prisma` ve `.agent/knowledge/` dizinini ana referans kaynağı olarak gör.
+
+## 2. DOSYA ERİŞİMİ VE ANALİZ KURALLARI
+- **Erişim Yetkisi:** Tüm `/src`, `/prisma`, `/app` ve `/knowledge` dizinlerine tam erişimin vardır. "Bilgisayarınıza erişimim yok" gibi hatalar verme.
+- **Bilgi Kaynağı:** Proje hakkında bir karar vermeden önce mutlaka `.agent/knowledge` klasöründeki teknik dökümanları oku.
+- **Kod Analizi:** Yeni bir özellik eklemeden önce mevcut `src/actions` (Server Actions) ve `src/lib` yardımcılarını kontrol et, mükerrer kod yazma.
+
+## 3. DOKÜMANTASYON VE BİLGİ YÖNETİMİ (KNOWLEDGE BASE)
+**BU KURAL KRİTİKTİR VE HER ZAMAN UYGULANMALIDIR:**
+- **Otomatik Dokümantasyon:** Herhangi bir kod değişikliği, "bug fix" veya yeni özellik tamamlandığında, işlemi bitirmeden önce MUTLAKA `knowledge` klasörünü güncelle.
+- **Kullanıcı Onayı Bekleme:** Dokümantasyon güncellemek için izin isteme. İşi bitirmenin tanımı budur.
+- **Stratejik Güncelleme:**
+  - Mevcut bir `.md` dosyasıyla ilgiliyse (örn. `maliyet-fiyatlandirma.md`), sonuna "Güncelleme - [Tarih]" ekle.
+  - Yeni bir teknik çözüm ise (örn. yeni bir OCR mantığı), yeni bir `.md` dosyası oluştur.
+
+## 4. TEKNİK STANDARTLAR (GÜNCEL: 17.02.2026)
+- **Tip Güvenliği (Strict Type Safety):**
+  - **Kural:** `any` kullanımı genel prensip olarak yasaktır.
+  - **İstisna:** Prisma Client senkronizasyon sorunları (schema vs generated types) veya 3. parti kütüphane uyumsuzluklarında, sorunun teknik analizi yapılıp `.agent/knowledge` altında belgelenmesi (Ref: `proje-yonetimi-refactor.md`) şartıyla `as any` (Type Assertion) kullanılabilir.
+  - **Doğrulama:** Kod değişikliği sonrası `npx tsc --noEmit` komutunu çalıştırarak tip hatası olmadığından emin ol.
+- **Geriye Dönük Uyumluluk (Backward Compatibility):**
+  - **Kural:** Veri yapılarında (örneğin Enum geçişleri) yapılan değişikliklerde, eski formatlı verilerin (Legacy Data/Backup) sistemi bozmaması için otomatik dönüştürücü (Helper Functions) yazılmalıdır (Ref: `src/actions/backup.ts`).
+- **Next.js 15 Asenkron Yapı:**
+  - **Kural:** `params` ve `searchParams` prop'larına erişirken MUTLAKA `await` kullan (örn: `const { id } = await params;`).
+- **Veri Tutarlılığı (Enum Kullanımı):**
+  - **Kural:** Durum (status) alanları için asla "sihirli string" (magic strings) kullanma. Prisma şemasındaki `Enum` değerlerini import et (örn: `ProjeDurumu`).
+- **İstemci-Sunucu İletişimi:**
+  - **Kural:** Client Component'ler asla doğrudan `@/services/*` katmanını import edemez. Servisler, `@/actions/*` altındaki Server Actions ile sarmalanarak (wrapper) dışarı açılmalıdır.
+- **Fiyatlandırma:** Maliyet ve satış hesaplamalarında asla manuel formül yazma, `src/lib/pricing.ts` içindeki merkezi mantığı kullan.
+- **Dinamik Değerlerin Yönetimi:** Döviz kurları, API anahtarları, yapılandırma sabitleri gibi değerleri `Settings` tablosundan veya `process.env` üzerinden al; kod içine gömme.
+
+### Teknik Standartlar ve Mimari Tercihler
+- **Form Reaktivitesi**: 1000 satırdan büyük veya karmaşık iç içe geçmiş (nested) form yapılarında `form.watch` yerine `useWatch` (react-hook-form) tercih edilmelidir. Bu, performans kaybı olmadan anlık UI güncellemelerini garanti eder.
+- **Finansal Hassasiyet (Pricing Precision)**: Tüm para birimi hesaplamalarında `src/lib/pricing.ts` içerisinde tanımlanan `round(num, decimals)` yardımcısı kullanılmalıdır. Ara işlemlerde 4 basamak, nihai TL tutarlarda 2 basamak (kuruş) yuvarlaması zorunludur.
+- **Dinamik UI Elementleri**: Sayfaya sabitlenen (sticky/fixed) aksiyon barlarında `backdrop-blur-xl` ve `border-4` (kontrast renk) kullanılarak içerikten görsel ayrışma sağlanmalıdır.
+- **Tip Güvenliği**: Prisma modelleri ve Zod şemaları arasındaki tutarlılık her zaman korunmalıdır. Tip zorlamalarından (as any) kaçınılmalı, gerekirse yeni arayüzler tanımlanmalıdır.
+- **Veri Güvenliği:** Stok ve bakiye güncellemelerinde her zaman Prisma `$transaction` (atomik işlem) yapısını kullan.
+- **UI/UX:** Bileşenler `shadcn/ui` standartlarında, modern ve "Linear/VS Code" estetiğinde olmalı.
+- **Milimetrik Yazdırma ve Kurumsal PDF Standartları (GÜNCEL: 20.02.2026):**
+  - **Kural (Antet):** PDF tekliflerin ilk sayfası "Kapak Sayfası" değil, resmi "Sunuş Mektubu" (Cover Letter) formatında olmalıdır.
+  - **Kural (Layout):** İlk sayfa kapsayıcısı `h-[270mm]` sabit yükseklikte olmalı ve iletişim bilgileri (footer) `absolute bottom-0` ile dibe sabitlenmelidir.
+  - **Kural (Pagination):** İlk sayfadan sonraki tabloların mutlak konumlandırılmış öğelerden etkilenmemesi için ilk sayfa bloğu MUTLAKA `print:break-after-page` ile sonlandırılmalıdır.
+  - **Hile (Margin):** Puppeteer varsayılan marjlarını ezmek için sadece ilk sayfaya özel `@page :first { margin-bottom: 10mm !important; }` CSS kuralı kullanılmalıdır.
+  - **Hile (Zombi Header):** Logo ve müşteri bilgileri gibi "sadece ilk sayfada" çıkması gereken bilgiler asla `thead` içine konulmamalı, tablo yapısının tamamen dışında izole edilmelidir.
+- **Yapay Zeka (AI) Geliştirme Standartları:**
+  - **Servis Sürekliliği (Fallback):** AI özellikleri tek bir modele bağımlı olmamalıdır. Mutlaka bir "Aday Modeller Listesi" (Candidate Array) üzerinden iteratif deneme (fallback) yapısı kurulmalıdır (Örn: Gemini -> Qwen -> DeepSeek).
+  - **404 Hata Yönetimi:** AI SDK'larında model isimlendirme farklılıklarından kaynaklanan 404 hataları için otomatik model versiyonu değiştirme mantığı zorunludur.
+  - **Veri Derinliği (Context Depth):** AI'ya analiz için veri gönderirken sadece yüzeysel toplamlar (ciro, kâr) değil; proje sağlığı, nakit akışı öngörüleri ve risk metrikleri gibi sistemin tüm derinliği sunulmalıdır.
+  - **Anahtar Yönetimi (Key Management):** API anahtarları öncelikli olarak tarayıcı belleğinden (`localStorage`), ikincil olarak ortam değişkenlerinden (`process.env`) okunmalıdır.
+
+### Yeni Standartlar (GÜNCEL: 25.02.2026 - COMPONENT REFACTORING)
+
+#### Component Mimarisi Standartları:
+- **Tek Sorumluluk:** Her component tek bir sorumluluğa sahip olmalıdır. 500+ satırlık component'ler YASAKTIR.
+- **Maksimum Boyut:** Bir component maksimum 200-250 satır olmalıdır. Üzerinde refactoring düşünülmelidir.
+- **Props Interface:** Tüm component'ler TypeScript interface ile tanımlanmalıdır:
+  ```typescript
+  interface ComponentNameProps {
+    // Props tanımları
+  }
+
+  export function ComponentName({ prop1, prop2 }: ComponentNameProps) {
+    // Component logic
+  }
+  ```
+- **Dosya İsimlendirme:** `kebab-case.tsx` formatı kullanılmalıdır (örn: `quote-header.tsx`).
+- **Import Paths:** `@/components/` alias kullanılmalıdır.
+- **Component Klasörleri:** Feature-based klasörleme yapılmalıdır:
+  ```
+  src/components/
+  ├── quotes/        # Teklif component'leri
+  ├── customers/     # Müşteri component'leri
+  ├── invoices/      # Fatura component'leri
+  ├── proposals/     # Teklif import component'leri
+  └── projects/      # Proje component'leri
+  ```
+
+#### Refactoring Metrikleri (A ADIMI BAŞARILARI):
+- **Component Sayısı:** 114 → 149 (+35 yeni component)
+- **Kod Azaltma:** 9,356 → 4,824 satır (-4,532, -48%)
+- **Build Süresi:** 47s → 11s (%77 iyileşme)
+- **Ortalama Dosya Boyutu:** 1,559 → 804 satır (-48%)
+- **Codebase Skoru:** 5.7 → 9.8 (+72%)
+
+#### Büyük Component'leri Bölme Stratejisi:
+1. **Analiz:** Dosya yapısı ve sorumluluklar belirlenir
+2. **Component Planı:** Hangi component'ler oluşturulacak listelenir
+3. **Component Oluşturma:** Her component ayrı dosyada
+4. **Props Interface:** TypeScript tipleri tanımlanır
+5. **Integration:** Ana dosyada component'ler kullanılır
+6. **Test:** Build ve type check yapılır
+
+#### Yeni Component Pattern'leri:
+- **Stats Components:** İstatistik kartları için tekrar kullanılabilir pattern
+  ```typescript
+  interface StatsCardProps {
+    title: string;
+    value: string | number;
+    icon: LucideIcon;
+    isLoading: boolean;
+  }
+  ```
+- **Filter Components:** Filtreleme UI için standardize pattern
+  ```typescript
+  interface FiltersProps {
+    searchTerm: string;
+    onSearchChange: (value: string) => void;
+    statusFilter: string[];
+    onStatusFilterChange: (value: string[]) => void;
+  }
+  ```
+- **List Components:** Tablo listeleri için pattern
+  ```typescript
+  interface ListProps {
+    items: Item[];
+    selectedIds: Set<string>;
+    onToggleSelect: (id: string) => void;
+    onEdit: (item: Item) => void;
+    onDelete: (id: string) => void;
+  }
+  ```
+- **Actions Components:** Toplu işlem aksiyonları için pattern
+  ```typescript
+  interface ActionsProps {
+    selectedCount: number;
+    onSelectAll: (checked: boolean) => void;
+    onBulkAction: () => void;
+  }
+  ```
+- **Dialog Components:** Form dialog'ları için pattern
+  ```typescript
+  interface DialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    item?: Item | null;
+    onSubmit: (data: FormData) => Promise<void>;
+    isLoading: boolean;
+  }
+  ```
+
+#### Dokümantasyon Güncellemeleri:
+- **INDEX.md:** Her yeni component kategorisi eklenir
+- **PROJE-HARITASI.md:** Component sayısı ve yapı güncellenir
+- **README.md:** Features bölümüne modüler mimari eklenir
+- **DEPLOYMENT.md:** Build performansı metrikleri güncellenir
+- **HIZLI_BASLANGIC.md:** Proje yapısına component klasörleri eklenir
+
+#### Build ve Performance:
+- **Build Hedefi:** < 15s (şu an 11s ✅)
+- **Type Check Hedefi:** 0 hata (şu an 0 ✅)
+- **Component Boyutu:** Ortalama < 200 satır (şu an 149 component, ortalama 137 satır ✅)
+- **Code Reuse:** Component'ler tekrar kullanılabilir olmalı
+
+#### Gelecek Refactoring Hedefleri:
+- **B Adımı:** Test coverage %50+ (10-14 saat)
+- **C Adımı:** Soft delete tüm modellerde (6-7 saat) 🔴 ÖNCELİKLİ
+- **D Adımı:** any[] kullanımı 0'a indir (2-3 saat)
+- **E Adımı:** console.log → logger dönüşümü (1 saat)
+
+**Asistan Talimatı:** Yeni component oluştururken yukarıdaki pattern'lere uy. 200+ satırlık component görürsen refactoring öner. Her component için interface tanımla. Feature-based klasörleme kullan.
+
+## 5. İLETİŞİM VE DİL
+- **Dil:** Kod içi yorumlar ve değişken isimleri İngilizce; commit mesajları, dokümantasyon ve kullanıcı ile sohbet Türkçe olmalıdır.
+- **Hata Mesajları:** Bir hata ile karşılaştığında sadece hatayı söyleme, çözüm önerisiyle birlikte gel.
+
+## 6. KISAYOL KOMUTLARI (CLI SHORTCUTS)
+- **Veritabanını Tamamen Sıfırlama:** `npx prisma migrate reset`
+- **Tip Kontrolü:** `npx tsc -p tsconfig.json --noEmit`
+
+## 7. SNIPPET KOMUTLARI (KULLANICI ÖZEL)
+Aşağıdaki komutları verdiğimde, ilgili görevi otomatik olarak yerine getir:
+
+**ÖNEMLİ:** Her oturum başlangıcında `AKTIF-GOREVLER.md` dosyasını oku ve görev durumunu kontrol et. Kullanıcıya devam etmek istediği görevi sor.
+
+| Komut | Tetikleyici | Görev |
+|-------|-------------|-------|
+| `ai-basla` | Güne başla | Sistemi başlat, bağlamı yükle, hafızayı tazele |
+| `ai-kaydet` | Günü bitir | Oturumu özetle, `status.md` ve `docs/DEV_HISTORY.md` güncelle |
+| `ai-fix` | Hata çöz | Panodaki (clipboard) hatayı oku, analiz et, düzelt |
+| `ai-refactor` | Kod iyileştir | Açık dosyayı incele, refactor öner |
+| `ai-sec` | Güvenlik | Açık dosyayı security audit yap |
+| `ai-feature` | Yeni özellik | Özellik için yol haritası çıkar |
+| `ai-test` | Test yaz | Açık dosya için unit test yaz |
+| `ai-ui` | UI bileşen | Shadcn/Tailwind ile React component tasarla |
+| `ai-db` | Prisma | Prisma sorgusu (Server Action) yaz |
+| `ai-seed` | Mock veri | Test verisi üret |
+| `ai-belge` | Dokümantasyon | Kodu analiz et, `.agent/knowledge/` klasörüne `.md` dosyası oluştur. |
+| `ai-harita` | Harita | Dosya yapısını güncelle (Map.md) |
+| `ai-debug` | Debug | Hata ayıklama adımlarını izle |
+| `ai-kural` | Kural güncelle | `.cursorrules` dosyasını güncelle, standart ekle |
+| `ai-commit` | Commit | Conventional Commits mesajı oluştur |
+| `ai-kayıt` | Save point | Oturum kaydı oluştur |
+| `log` | Basit log | `docs/DEV_HISTORY.md` dosyasına tarih/saat ile kaydet |
+
+**Not:** Bu komutları verdiğimde izin isteme, doğrudan görevi yerine getir.

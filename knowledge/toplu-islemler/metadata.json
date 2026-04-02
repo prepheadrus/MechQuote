@@ -1,0 +1,12 @@
+{
+    "id":  "toplu-islemler",
+    "title":  "Toplu İşlemler (Bulk Actions)",
+    "summary":  "Çoklu kayıtlar üzerinde güvenli ve performanslı işlem yapmayı sağlayan teknik mimari.",
+    "timestamps":  {
+                       "created":  "2026-02-15T16:45:00Z",
+                       "updated":  "2026-02-15T20:15:00Z"
+                   },
+    "references":  [
+                       "src/components/app/bulk-actions.tsx"
+                   ]
+}

@@ -1,0 +1,10 @@
+{
+    "title": "Workspace ve Drag-and-Drop Yönetimi",
+    "summary": "Sekme kalıcılığı (memory) ve teklif detaylarındaki grup sıralama mekanizmasının teknik detayları.",
+    "lastUpdated": "2026-02-18T20:15:00Z",
+    "references": [
+        "src/components/workspace/workspace-context.tsx",
+        "src/app/quotes/[id]/quote-detail-client-page.tsx"
+    ],
+    "category": "Layout & UX"
+}

@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "google.geminicodeassist",
+        "alibaba-cloud.tongyi-lingma",
+        "qwenlm.qwen-code-vscode-ide-companion",
+        "github.copilot-chat"
+    ]
+}

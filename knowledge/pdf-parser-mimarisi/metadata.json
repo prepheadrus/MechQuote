@@ -1,0 +1,12 @@
+{
+    "id":  "pdf-parser-mimarisi",
+    "title":  "PDF Veri Ayıklama Mimarisi (PDF Parser)",
+    "summary":  "Koordinat tabanlı PDF veri ayıklama motoru, TypeScript tip güvenliği çözümleri ve veri eşleştirme stratejileri.",
+    "timestamps":  {
+                       "created":  "2026-02-15T14:40:09Z",
+                       "updated":  "2026-02-15T20:15:00Z"
+                   },
+    "references":  [
+                       "src/lib/pdf-parser.ts"
+                   ]
+}

@@ -1,0 +1,12 @@
+{
+    "id":  "maliyet-fiyatlandirma",
+    "title":  "Maliyet ve Fiyatlandırma Mantığı",
+    "summary":  "MechQuote projesindeki maliyet hesaplama, KDV normalizasyonu, kâr marjı ve döviz çevrimi mantığını detaylandıran teknik döküman.",
+    "timestamps":  {
+                       "created":  "2026-02-15T14:54:44Z",
+                       "updated":  "2026-02-15T20:15:00Z"
+                   },
+    "references":  [
+                       "src/lib/pricing.ts"
+                   ]
+}

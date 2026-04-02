@@ -1,0 +1,12 @@
+{
+    "id":  "dashboard-analitik",
+    "title":  "Dashboard ve Analitik Görünüm",
+    "summary":  "Recharts ile finansal veri görselleştirme, kâr analizi ve proje sağlık izleme özellikleri.",
+    "timestamps":  {
+                       "created":  "2026-02-15T16:00:00Z",
+                       "updated":  "2026-02-15T20:15:00Z"
+                   },
+    "references":  [
+                       "src/app/dashboard/dashboard-view.tsx"
+                   ]
+}

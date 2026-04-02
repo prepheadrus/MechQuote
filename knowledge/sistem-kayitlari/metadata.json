@@ -1,0 +1,12 @@
+{
+    "id":  "sistem-kayitlari",
+    "title":  "Sistem Kayıtları (Audit Logs)",
+    "summary":  "Uygulama üzerindeki kritik değişikliklerin merkezi olarak izlenmesi ve günlüklenmesi sistemi.",
+    "timestamps":  {
+                       "created":  "2026-02-15T16:30:00Z",
+                       "updated":  "2026-02-15T20:15:00Z"
+                   },
+    "references":  [
+                       "src/services/audit-service.ts"
+                   ]
+}

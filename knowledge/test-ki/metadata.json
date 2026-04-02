@@ -1,0 +1,12 @@
+{
+    "id":  "test-ki",
+    "title":  "Test Knowledge Item",
+    "summary":  "This is a test knowledge item to verify if it appears in the Knowledge tab.",
+    "timestamps":  {
+                       "created":  "2026-02-15T20:25:00Z",
+                       "updated":  "2026-02-15T20:25:00Z"
+                   },
+    "references":  [
+
+                   ]
+}

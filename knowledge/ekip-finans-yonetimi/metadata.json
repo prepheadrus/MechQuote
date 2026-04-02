@@ -1,0 +1,12 @@
+{
+    "title": "Ekip Finansal Yönetimi ve Cari Sistem",
+    "summary": "Ekiplerin projeye atanması, hakediş (earning) ve ödeme (payment) takibi ile çapraz proje borç/alacak yönetiminin teknik mimarisi.",
+    "lastUpdated": "2026-02-18T20:30:00Z",
+    "references": [
+        "prisma/schema.prisma",
+        "src/actions/job-assignments.ts",
+        "src/actions/projects.ts",
+        "src/components/projects/project-team-manager.tsx"
+    ],
+    "category": "Finans & Proje Yönetimi"
+}
