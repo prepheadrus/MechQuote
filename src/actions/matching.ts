@@ -351,7 +351,7 @@ export async function matchProduct(name: string, supplierId?: string | null) {
                     aliasName: normalizedName
                 }
             },
-            include: { product: { where: { isDeleted: false } } }
+            include: { product: { } }
         });
         if (supplierAlias) return { product: supplierAlias.product, method: 'memory-supplier' };
     }
@@ -359,14 +359,14 @@ export async function matchProduct(name: string, supplierId?: string | null) {
     // STEP 5: Check global aliases
     const globalAlias = await prisma.productAlias.findFirst({
         where: { isDeleted: false,  aliasName: { equals: normalizedName } },
-        include: { product: { where: { isDeleted: false } } },
+        include: { product: { } },
         orderBy: { createdAt: 'desc' }
     });
     if (globalAlias) return { product: globalAlias.product, method: 'memory-global' };
 
     // STEP 6: String-based fuzzy matching with NEW centralized search service
     const allProducts = await prisma.product.findMany({ where: { isDeleted: false },
-        select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } }, code: { where: { isDeleted: false } }, brand: { where: { isDeleted: false } }, model: { where: { isDeleted: false } }, unit: { where: { isDeleted: false } }, description: { where: { isDeleted: false } } }
+        select: { id: true, name: true, code: true, brand: true, model: true, unit: true, description: true }
     });
 
     // Use new searchProducts service for better matching
@@ -439,7 +439,7 @@ export async function suggestProductDetails(rawName: string) {
     const suggestedCode = `${codePrefix}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const existingCategories = await prisma.product.findMany({ where: { isDeleted: false },
-        select: { category: { where: { isDeleted: false } } },
+        select: { category: true },
         distinct: ['category']
     });
 

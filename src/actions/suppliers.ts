@@ -34,8 +34,8 @@ export async function getSuppliers() {
                 senderName: { not: null }
             },
             select: {
-                senderName: { where: { isDeleted: false } },
-                senderTaxId: { where: { isDeleted: false } }
+                senderName: true,
+                senderTaxId: true
             },
             distinct: ['senderName']
         });

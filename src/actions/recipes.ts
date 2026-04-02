@@ -35,7 +35,7 @@ export async function getRecipe(productId: string) {
         const recipe = await prisma.recipe.findFirst({
             where: { productId, isDeleted: false },
             include: {
-                product: { where: { isDeleted: false } },
+                product: true,
                 recipeItems: { where: { isDeleted: false },
                     orderBy: {
                         orderIndex: 'asc'

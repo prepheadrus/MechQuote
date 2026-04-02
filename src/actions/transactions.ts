@@ -13,7 +13,7 @@ export async function getProjectTransactions(projectId: string) {
     try {
         const transactions = await prisma.projectExpense.findMany({
             where: { isDeleted: false,  projectId },
-            include: { supplier: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } } },
+            include: { supplier: { where: { isDeleted: false },  select: { name: true } } },
             orderBy: { date: 'desc' }
         });
         return { success: true, data: transactions };
@@ -29,7 +29,7 @@ export async function getProjectTransactions(projectId: string) {
 export async function getAllProjectExpenses() {
     try {
         const transactions = await prisma.projectExpense.findMany({ where: { isDeleted: false },
-            include: { project: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } }, supplier: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } } },
+            include: { project: { select: { name: true } }, supplier: { select: { name: true } } },
             orderBy: { date: 'desc' }
         });
         return { success: true, data: transactions };
@@ -56,7 +56,7 @@ export async function createTransaction(data: {
 
         const project = await prisma.project.findFirst({
             where: { isDeleted: false,  id: data.projectId },
-            select: { customerId: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } }
+            select: { customerId: true, name: true }
         });
 
         if (!project) {
@@ -151,7 +151,7 @@ export async function updateTransaction(id: string, data: {
         if (data.type === 'Income') {
             const project = await prisma.project.findFirst({
                 where: { isDeleted: false,  id: data.projectId },
-                select: { customerId: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } }
+                select: { customerId: true, name: true }
             });
 
             if (project?.customerId) {

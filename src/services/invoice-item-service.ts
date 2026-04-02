@@ -12,7 +12,7 @@ export async function deleteInvoiceItem(itemId: string) {
         // 1. Get the item to find its parent invoice
         const item = await prisma.invoiceItem.findFirst({
             where: { isDeleted: false,  id: itemId },
-            select: { invoiceId: { where: { isDeleted: false } } }
+            select: { invoiceId: true }
         });
 
         if (!item) {

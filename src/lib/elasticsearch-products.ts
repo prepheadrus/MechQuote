@@ -193,7 +193,7 @@ export async function syncAllProducts(): Promise<{
     // Fetch all products with relations
     const products = await prisma.product.findMany({ where: { isDeleted: false },
       include: {
-        _count: { where: { isDeleted: false },
+        _count: {
           select: { invoiceItems: { where: { isDeleted: false } } },
         },
       },
@@ -237,7 +237,7 @@ export async function syncProduct(productId: string): Promise<boolean> {
     const product = await prisma.product.findFirst({
       where: { isDeleted: false,  id: productId },
       include: {
-        _count: { where: { isDeleted: false },
+        _count: {
           select: { invoiceItems: { where: { isDeleted: false } } },
         },
       },

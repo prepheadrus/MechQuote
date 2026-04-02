@@ -136,7 +136,7 @@ export async function syncAllInvoices(): Promise<{
     const invoices = await prisma.invoice.findMany({ where: { isDeleted: false },
       include: {
         customer: { where: { isDeleted: false } },
-        _count: { where: { isDeleted: false },
+        _count: {
           select: { items: { where: { isDeleted: false } } },
         },
       },
@@ -175,7 +175,7 @@ export async function syncInvoice(invoiceId: string): Promise<boolean> {
       where: { isDeleted: false,  id: invoiceId },
       include: {
         customer: { where: { isDeleted: false } },
-        _count: { where: { isDeleted: false },
+        _count: {
           select: { items: { where: { isDeleted: false } } },
         },
       },

@@ -43,7 +43,7 @@ export async function getPersonnel() {
                             where: { isDeleted: false }, // ✅ Nested filtre
                             include: {
                                 project: { where: { isDeleted: false } }, // Tekil ilişki - where desteklenmiyor
-                                customer: { where: { isDeleted: false } } // Tekil ilişki - where desteklenmiyor
+                                customer: true // Tekil ilişki - where desteklenmiyor
                             }
                         }
                     }
@@ -52,7 +52,7 @@ export async function getPersonnel() {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     include: {
                         project: { where: { isDeleted: false },
-                            select: { name: { where: { isDeleted: false } } }
+                            select: { name: true }
                         }
                     },
                     orderBy: { date: 'desc' }
@@ -97,7 +97,7 @@ export async function getPersonnelById(id: string) {
                         proposal: {
                             where: { isDeleted: false }, // ✅ Nested filtre
                             include: {
-                                customer: { where: { isDeleted: false } } // Tekil ilişki - where desteklenmiyor
+                                customer: true // Tekil ilişki - where desteklenmiyor
                             }
                         }
                     },
@@ -184,7 +184,7 @@ export async function getPersonnelTransactions(personnelId: string) {
             where: { personnelId },
             include: {
                 project: { where: { isDeleted: false },
-                    select: { name: { where: { isDeleted: false } } }
+                    select: { name: true }
                 }
             },
             orderBy: { date: 'desc' }

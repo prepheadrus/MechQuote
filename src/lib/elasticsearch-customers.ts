@@ -140,7 +140,7 @@ export async function syncAllCustomers(): Promise<{
 
     const customers = await prisma.customer.findMany({ where: { isDeleted: false },
       include: {
-        _count: { where: { isDeleted: false },
+        _count: {
           select: {
             proposals: { where: { isDeleted: false } },
             invoices: { where: { isDeleted: false } },
@@ -182,7 +182,7 @@ export async function syncCustomer(customerId: string): Promise<boolean> {
     const customer = await prisma.customer.findFirst({
       where: { isDeleted: false,  id: customerId },
       include: {
-        _count: { where: { isDeleted: false },
+        _count: {
           select: {
             proposals: { where: { isDeleted: false } },
             invoices: { where: { isDeleted: false } },
@@ -253,7 +253,7 @@ export async function searchCustomersWithFallback(
     },
     take: options.size || 20,
     include: {
-      _count: { where: { isDeleted: false },
+      _count: {
         select: {
           proposals: { where: { isDeleted: false } },
           invoices: { where: { isDeleted: false } },

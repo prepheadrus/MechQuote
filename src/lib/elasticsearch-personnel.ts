@@ -132,7 +132,7 @@ export async function syncAllPersonnel(): Promise<{
 
     const personnel = await prisma.personnel.findMany({ where: { isDeleted: false },
       include: {
-        _count: { where: { isDeleted: false },
+        _count: {
           select: {
             assignments: { where: { isDeleted: false } },
             
@@ -173,7 +173,7 @@ export async function syncPersonnel(personnelId: string): Promise<boolean> {
     const personnel = await prisma.personnel.findFirst({
       where: { isDeleted: false,  id: personnelId },
       include: {
-        _count: { where: { isDeleted: false },
+        _count: {
           select: {
             assignments: { where: { isDeleted: false } },
             

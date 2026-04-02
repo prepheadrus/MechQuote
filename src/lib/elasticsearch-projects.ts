@@ -165,9 +165,9 @@ export async function syncAllProjects(): Promise<{
 
     const projects = await prisma.project.findMany({ where: { isDeleted: false },
       include: {
-        customer: { where: { isDeleted: false } },
+        customer: true,
         
-        _count: { where: { isDeleted: false },
+        _count: {
           select: {
             proposals: { where: { isDeleted: false } },
             invoices: { where: { isDeleted: false } },
@@ -209,9 +209,9 @@ export async function syncProject(projectId: string): Promise<boolean> {
     const project = await prisma.project.findFirst({
       where: { isDeleted: false,  id: projectId },
       include: {
-        customer: { where: { isDeleted: false } },
+        customer: true,
         
-        _count: { where: { isDeleted: false },
+        _count: {
           select: {
             proposals: { where: { isDeleted: false } },
             invoices: { where: { isDeleted: false } },
@@ -274,7 +274,7 @@ export async function searchProjectsWithFallback(
     },
     take: options.size || 20,
     include: {
-      customer: { where: { isDeleted: false } },
+      customer: true,
     },
   });
 

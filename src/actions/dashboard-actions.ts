@@ -53,53 +53,53 @@ export const getDashboardStats = cache(async function getDashboardStats() {
             prisma.invoice.findMany({
                 where: { type: 'Outgoing', status: { not: 'Cancelled' }, isDeleted: false },
                 select: {
-                    id: { where: { isDeleted: false } },
-                    totalAmount: { where: { isDeleted: false } },
-                    dueDate: { where: { isDeleted: false } },
-                    status: { where: { isDeleted: false } },
-                    payments: { where: { isDeleted: false },  select: { amount: { where: { isDeleted: false } } } },
-                    customer: { where: { isDeleted: false },  select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } } },
-                    project: { where: { isDeleted: false },  select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } } }
+                    id: true,
+                    totalAmount: true,
+                    dueDate: true,
+                    status: true,
+                    payments: { where: { isDeleted: false },  select: { amount: true } },
+                    customer: { where: { isDeleted: false },  select: { id: true, name: true } },
+                    project: { where: { isDeleted: false },  select: { id: true, name: true } }
                 }
             }),
             // INCOMING INVOICES - Optimized with select
             prisma.invoice.findMany({
                 where: { type: 'Incoming', status: { not: 'Cancelled' }, isDeleted: false },
                 select: {
-                    id: { where: { isDeleted: false } },
-                    totalAmount: { where: { isDeleted: false } },
-                    dueDate: { where: { isDeleted: false } },
-                    status: { where: { isDeleted: false } },
-                    customer: { where: { isDeleted: false },  select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } } },
-                    project: { where: { isDeleted: false },  select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } } }
+                    id: true,
+                    totalAmount: true,
+                    dueDate: true,
+                    status: true,
+                    customer: { where: { isDeleted: false },  select: { id: true, name: true } },
+                    project: { where: { isDeleted: false },  select: { id: true, name: true } }
                 }
             }),
             // RETURN INVOICES - Optimized with select
             prisma.invoice.findMany({
                 where: { type: 'PurchaseReturn', status: { not: 'Cancelled' }, isDeleted: false },
                 select: {
-                    id: { where: { isDeleted: false } },
-                    totalAmount: { where: { isDeleted: false } },
-                    customer: { where: { isDeleted: false },  select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } } },
-                    project: { where: { isDeleted: false },  select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } } }
+                    id: true,
+                    totalAmount: true,
+                    customer: { where: { isDeleted: false },  select: { id: true, name: true } },
+                    project: { where: { isDeleted: false },  select: { id: true, name: true } }
                 }
             }),
             // TRANSACTIONS - Minimal fields
             prisma.projectExpense.findMany({
                 where: { isDeleted: false }, // ✅ Soft delete filtresi
                 select: {
-                    id: { where: { isDeleted: false } },
-                    amount: { where: { isDeleted: false } },
-                    type: { where: { isDeleted: false } },
-                    category: { where: { isDeleted: false } }
+                    id: true,
+                    amount: true,
+                    type: true,
+                    category: true
                 }
             }),
             // ASSIGNMENTS - Minimal fields
             prisma.jobAssignment.findMany({
                 where: { isDeleted: false }, // ✅ Soft delete filtresi
                 select: {
-                    id: { where: { isDeleted: false } },
-                    paymentHistory: { where: { isDeleted: false } }
+                    id: true,
+                    paymentHistory: true
                 }
             }),
             // RECENT INVOICES - Limited with select
@@ -108,12 +108,12 @@ export const getDashboardStats = cache(async function getDashboardStats() {
                 take: 10,
                 orderBy: { createdAt: 'desc' },
                 select: {
-                    id: { where: { isDeleted: false } },
-                    invoiceNumber: { where: { isDeleted: false } },
-                    totalAmount: { where: { isDeleted: false } },
-                    createdAt: { where: { isDeleted: false } },
-                    customer: { where: { isDeleted: false },  select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } } },
-                    project: { where: { isDeleted: false },  select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } } }
+                    id: true,
+                    invoiceNumber: true,
+                    totalAmount: true,
+                    createdAt: true,
+                    customer: { where: { isDeleted: false },  select: { id: true, name: true } },
+                    project: { where: { isDeleted: false },  select: { id: true, name: true } }
                 }
             }),
             // ONGOING PROJECTS - Optimized nested includes
@@ -134,11 +134,11 @@ export const getDashboardStats = cache(async function getDashboardStats() {
                 },
                 take: 5,
                 select: {
-                    id: { where: { isDeleted: false } },
-                    name: { where: { isDeleted: false } },
-                    contractAmount: { where: { isDeleted: false } },
-                    updatedAt: { where: { isDeleted: false } },
-                    customer: { where: { isDeleted: false },  select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } } },
+                    id: true,
+                    name: true,
+                    contractAmount: true,
+                    updatedAt: true,
+                    customer: { select: { id: true, name: true } },
                     invoiceItems: {
                         where: { isDeleted: false,
                             invoice: {
@@ -146,18 +146,18 @@ export const getDashboardStats = cache(async function getDashboardStats() {
                             }
                         },
                         select: {
-                            totalPrice: { where: { isDeleted: false } },
-                            invoice: { where: { isDeleted: false },  select: { type: { where: { isDeleted: false } } } }
+                            totalPrice: true,
+                            invoice: { select: { type: true } }
                         }
                     },
                     transactions: {
                         where: { isDeleted: false,  type: 'Expense' },
-                        select: { amount: { where: { isDeleted: false } }, category: { where: { isDeleted: false } } }
+                        select: { amount: true, category: true }
                     },
                     linkedProposal: { where: { isDeleted: false },
                         select: {
                             jobAssignments: { where: { isDeleted: false },
-                                select: { paymentHistory: { where: { isDeleted: false } } }
+                                select: { paymentHistory: true }
                             }
                         }
                     }
@@ -175,10 +175,10 @@ export const getDashboardStats = cache(async function getDashboardStats() {
                 },
                 take: 15,
                 select: {
-                    id: { where: { isDeleted: false } },
-                    name: { where: { isDeleted: false } },
-                    stockQuantity: { where: { isDeleted: false } },
-                    minStockLevel: { where: { isDeleted: false } }
+                    id: true,
+                    name: true,
+                    stockQuantity: true,
+                    minStockLevel: true
                 },
                 orderBy: { stockQuantity: 'asc' }
             }),
@@ -190,10 +190,10 @@ export const getDashboardStats = cache(async function getDashboardStats() {
                     createdAt: { lte: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) }
                 },
                 select: {
-                    id: { where: { isDeleted: false } },
-                    quoteNumber: { where: { isDeleted: false } },
-                    createdAt: { where: { isDeleted: false } },
-                    customer: { where: { isDeleted: false },  select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } } }
+                    id: true,
+                    quoteNumber: true,
+                    createdAt: true,
+                    customer: { select: { id: true, name: true } }
                 },
                 take: 5,
                 orderBy: { createdAt: 'asc' }

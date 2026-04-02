@@ -35,7 +35,7 @@ export async function collectTrainingData(
     if (productName === 'Unknown Product' || !productName) {
       const product = await prisma.product.findFirst({
         where: { isDeleted: false,  id: productId },
-        select: { name: { where: { isDeleted: false } } }
+        select: { name: true }
       });
       if (product) {
         finalProductName = product.name;
@@ -117,7 +117,7 @@ export async function backfillTrainingData(): Promise<{ success: boolean; count:
         },
       },
       include: {
-        invoice: { where: { isDeleted: false } },
+        invoice: true,
         product: { where: { isDeleted: false } },
       },
       take: 1000,

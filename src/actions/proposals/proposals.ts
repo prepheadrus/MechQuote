@@ -53,7 +53,7 @@ async function handleStockReservationOnApproval(tx: any, proposal: any) {
         if (item.productId) {
             const productExists = await tx.product.findFirst({
                 where: { isDeleted: false,  id: item.productId },
-                select: { id: { where: { isDeleted: false } } }
+                select: { id: true }
             });
 
             if (productExists) {
@@ -84,7 +84,7 @@ async function handleStockReleaseOnCancel(tx: any, proposal: any) {
         if (item.productId) {
             const productExists = await tx.product.findFirst({
                 where: { isDeleted: false,  id: item.productId },
-                select: { id: { where: { isDeleted: false } } }
+                select: { id: true }
             });
 
             if (productExists) {
@@ -212,7 +212,7 @@ export async function getProposalList(filters?: {
         const proposals = await prisma.proposal.findMany({
             where,
             include: {
-                customer: { where: { isDeleted: false } },
+                customer: true,
                 items: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     orderBy: { orderIndex: 'asc' }
@@ -220,7 +220,7 @@ export async function getProposalList(filters?: {
                 jobAssignments: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     include: {
-                        personnel: { where: { isDeleted: false } } // Tekil ilişki - where desteklenmiyor
+                        personnel: true // Tekil ilişki - where desteklenmiyor
                     }
                 }
             },
@@ -248,7 +248,7 @@ export async function getProposalAnalytics() {
             prisma.proposal.findMany({
                 where: { isDeleted: false },
                 include: {
-                    customer: { where: { isDeleted: false } },
+                    customer: true,
                     items: {
                         where: { isDeleted: false }, // ✅ Soft delete filtresi
                         orderBy: { orderIndex: 'asc' }
@@ -256,7 +256,7 @@ export async function getProposalAnalytics() {
                     jobAssignments: {
                         where: { isDeleted: false }, // ✅ Soft delete filtresi
                         include: {
-                            personnel: { where: { isDeleted: false } }
+                            personnel: true
                         }
                     }
                 },
@@ -264,7 +264,7 @@ export async function getProposalAnalytics() {
             }),
             prisma.customer.findMany({
                 where: { isDeleted: false },
-                select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } }
+                select: { id: true, name: true }
             })
         ]);
 
@@ -306,7 +306,7 @@ export async function getProposal(id: string) {
         const proposal = await prisma.proposal.findFirst({
             where: { id, isDeleted: false },
             include: {
-                customer: { where: { isDeleted: false } },
+                customer: true,
                 items: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     orderBy: { orderIndex: 'asc' }
@@ -314,7 +314,7 @@ export async function getProposal(id: string) {
                 jobAssignments: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     include: {
-                        personnel: { where: { isDeleted: false } } // Tekil ilişki - where desteklenmiyor
+                        personnel: true // Tekil ilişki - where desteklenmiyor
                     }
                 }
             }
@@ -339,7 +339,7 @@ export async function getProposalForPrint(id: string) {
         const proposal = await prisma.proposal.findFirst({
             where: { id, isDeleted: false },
             include: {
-                customer: { where: { isDeleted: false } },
+                customer: true,
                 items: { where: { isDeleted: false },
                     orderBy: { orderIndex: 'asc' }
                 }
@@ -375,7 +375,7 @@ export async function getProposalVersions(rootProposalId: string) {
         const versions = await prisma.proposal.findMany({
             where: { rootProposalId, isDeleted: false },
             include: {
-                customer: { where: { isDeleted: false } },
+                customer: true,
                 items: { where: { isDeleted: false },
                     orderBy: { orderIndex: 'asc' }
                 }

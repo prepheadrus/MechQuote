@@ -82,13 +82,13 @@ async function DashboardData({ filter }: { filter: string }) {
             where: whereClause,
             include: {
                 items: { where: { isDeleted: false } },
-                customer: { where: { isDeleted: false },  select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } } }
+                customer: { select: { id: true, name: true } }
             },
             orderBy: { createdAt: 'desc' }
         }),
         prisma.proposal.findMany({ where: { isDeleted: false },
             take: 5,
-            include: { customer: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } } },
+            include: { customer: { select: { name: true } } },
             orderBy: { createdAt: 'desc' },
         }),
         prisma.proposal.findMany({
@@ -112,11 +112,11 @@ async function DashboardData({ filter }: { filter: string }) {
             isDeleted: false
         },
         select: {
-            id: { where: { isDeleted: false } },
-            contractAmount: { where: { isDeleted: false } },
-            linkedProposalId: { where: { isDeleted: false } },
-            estimatedMaterialCost: { where: { isDeleted: false } },
-            estimatedLaborCost: { where: { isDeleted: false } }
+            id: true,
+            contractAmount: true,
+            linkedProposalId: true,
+            estimatedMaterialCost: true,
+            estimatedLaborCost: true
         }
     });
     
