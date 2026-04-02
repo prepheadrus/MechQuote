@@ -135,12 +135,12 @@ export async function syncAllProposals(): Promise<{
   try {
     console.log('[Elasticsearch] Starting full proposals sync...');
 
-    const proposals = await prisma.proposal.findMany({
+    const proposals = await prisma.proposal.findMany({ where: { isDeleted: false },
       include: {
-        customer: true,
+        customer: { where: { isDeleted: false } },
         
-        _count: {
-          select: { items: true },
+        _count: { where: { isDeleted: false },
+          select: { items: { where: { isDeleted: false } } },
         },
       },
     });
@@ -174,13 +174,13 @@ export async function syncAllProposals(): Promise<{
 
 export async function syncProposal(proposalId: string): Promise<boolean> {
   try {
-    const proposal = await prisma.proposal.findUnique({
-      where: { id: proposalId },
+    const proposal = await prisma.proposal.findFirst({
+      where: { isDeleted: false,  id: proposalId },
       include: {
-        customer: true,
+        customer: { where: { isDeleted: false } },
         
-        _count: {
-          select: { items: true },
+        _count: { where: { isDeleted: false },
+          select: { items: { where: { isDeleted: false } } },
         },
       },
     });
@@ -230,7 +230,7 @@ export async function searchProposalsWithFallback(
   console.log('[Elasticsearch] Fallback to Prisma for proposals:', query);
   
   const proposals = await prisma.proposal.findMany({
-    where: {
+    where: { isDeleted: false,
       OR: [
         { quoteNumber: { contains: query } },
         { customer: { name: { contains: query } } },
@@ -238,7 +238,7 @@ export async function searchProposalsWithFallback(
     },
     take: options.size || 20,
     include: {
-      customer: true,
+      customer: { where: { isDeleted: false } },
     },
   });
 

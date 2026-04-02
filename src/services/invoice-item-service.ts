@@ -10,9 +10,9 @@ import { matchProduct } from '@/actions/matching';
 export async function deleteInvoiceItem(itemId: string) {
     try {
         // 1. Get the item to find its parent invoice
-        const item = await prisma.invoiceItem.findUnique({
-            where: { id: itemId },
-            select: { invoiceId: true }
+        const item = await prisma.invoiceItem.findFirst({
+            where: { isDeleted: false,  id: itemId },
+            select: { invoiceId: { where: { isDeleted: false } } }
         });
 
         if (!item) {
@@ -20,13 +20,11 @@ export async function deleteInvoiceItem(itemId: string) {
         }
 
         // 2. Delete the item
-        await prisma.invoiceItem.delete({
-            where: { id: itemId }
-        });
+        await prisma.invoiceItem.update({ where: { id: itemId }, data: { isDeleted: true, deletedAt: new Date() } });
 
         // 3. Recalculate Invoice Totals
         const remainingItems = await prisma.invoiceItem.findMany({
-            where: { invoiceId: item.invoiceId }
+            where: { isDeleted: false,  invoiceId: item.invoiceId }
         });
 
         let subTotal = 0;
@@ -71,8 +69,8 @@ export async function addInvoiceItems(invoiceId: string, items: any[]) {
         console.log(`[AddItems] Adding ${items.length} items to invoice ${invoiceId}`);
 
         // 1. Get the invoice to verify it exists and get type
-        const invoice = await prisma.invoice.findUnique({
-            where: { id: invoiceId }
+        const invoice = await prisma.invoice.findFirst({
+            where: { isDeleted: false,  id: invoiceId }
         });
 
         if (!invoice) {
@@ -81,7 +79,7 @@ export async function addInvoiceItems(invoiceId: string, items: any[]) {
 
         // 2a. Fetch existing items to check for duplicates
         const existingItems = await prisma.invoiceItem.findMany({
-            where: { invoiceId: invoiceId }
+            where: { isDeleted: false,  invoiceId: invoiceId }
         });
 
         // 2b. Prepare items with linkedProductId logic
@@ -161,7 +159,7 @@ export async function addInvoiceItems(invoiceId: string, items: any[]) {
 
         // 4. Recalculate Invoice Totals (Reuse logic from deleteInvoiceItem ideally, or duplicate for safety)
         const allItems = await prisma.invoiceItem.findMany({
-            where: { invoiceId: invoiceId }
+            where: { isDeleted: false,  invoiceId: invoiceId }
         });
 
         const newSubTotal = allItems.reduce((sum, i) => sum + i.totalPrice, 0);
@@ -202,7 +200,7 @@ export async function linkInvoiceItemToProject(itemId: string, projectId: string
                 where: { id: itemId },
                 data: { projectId: null },
                 include: {
-                    project: {
+                    project: { where: { isDeleted: false },
                         include: {
                             customer: true
                         }
@@ -211,14 +209,14 @@ export async function linkInvoiceItemToProject(itemId: string, projectId: string
             });
         } else {
             // Validate project exists
-            const project = await prisma.project.findUnique({ where: { id: projectId } });
+            const project = await prisma.project.findFirst({ where: { isDeleted: false,  id: projectId } });
             if (!project) return { success: false, error: "Seçilen proje bulunamadı." };
 
             updatedItem = await prisma.invoiceItem.update({
                 where: { id: itemId },
                 data: { projectId: projectId },
                 include: {
-                    project: {
+                    project: { where: { isDeleted: false },
                         include: {
                             customer: true
                         }
@@ -244,7 +242,7 @@ export async function bulkLinkInvoiceItemsToProject(itemIds: string[], projectId
             });
         } else {
             // Validate project exists
-            const project = await prisma.project.findUnique({ where: { id: projectId } });
+            const project = await prisma.project.findFirst({ where: { isDeleted: false,  id: projectId } });
             if (!project) return { success: false, error: "Seçilen proje bulunamadı." };
 
             await prisma.invoiceItem.updateMany({

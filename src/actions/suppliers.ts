@@ -29,13 +29,13 @@ export async function getSuppliers() {
 
         // 3. Get implicit suppliers from purchase invoices
         const invoiceSuppliers = await prisma.invoice.findMany({
-            where: {
+            where: { isDeleted: false,
                 type: 'Incoming',
                 senderName: { not: null }
             },
             select: {
-                senderName: true,
-                senderTaxId: true
+                senderName: { where: { isDeleted: false } },
+                senderTaxId: { where: { isDeleted: false } }
             },
             distinct: ['senderName']
         });

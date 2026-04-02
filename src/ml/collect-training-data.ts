@@ -139,11 +139,11 @@ async function collectTrainingData(): Promise<MatchingPair[]> {
   // 1. Collect positive examples (matched items)
   console.log('✅ Collecting positive examples (matched)...');
   const allFeedback = await prisma.feedback.findMany({
-    where: {
+    where: { isDeleted: false,
       type: 'approved',
     },
     include: {
-      product: true,
+      product: { where: { isDeleted: false } },
     },
     take: 1000,
   });
@@ -195,7 +195,7 @@ async function collectTrainingData(): Promise<MatchingPair[]> {
   // 2. Collect negative examples (rejected items)
   console.log('❌ Collecting negative examples (rejected)...');
   const allRejected = await prisma.feedback.findMany({
-    where: {
+    where: { isDeleted: false,
       type: 'rejected',
     },
     take: 500,
@@ -206,8 +206,8 @@ async function collectTrainingData(): Promise<MatchingPair[]> {
   for (const feedback of rejectedItems) {
     if (!feedback.originalMatchId) continue;
     
-    const originalProduct = await prisma.product.findUnique({
-      where: { id: feedback.originalMatchId },
+    const originalProduct = await prisma.product.findFirst({
+      where: { isDeleted: false,  id: feedback.originalMatchId },
     });
     
     if (!originalProduct) continue;
@@ -248,11 +248,11 @@ async function collectTrainingData(): Promise<MatchingPair[]> {
   // 3. Collect corrected examples (user fixed the match)
   console.log('🔧 Collecting corrected examples...');
   const allCorrected = await prisma.feedback.findMany({
-    where: {
+    where: { isDeleted: false,
       type: 'corrected',
     },
     include: {
-      product: true,
+      product: { where: { isDeleted: false } },
     },
     take: 500,
   });
@@ -267,8 +267,8 @@ async function collectTrainingData(): Promise<MatchingPair[]> {
     if (!feedback.product || !feedback.originalMatchId) continue;
     
     // Get the original (wrong) product
-    const originalProduct = await prisma.product.findUnique({
-      where: { id: feedback.originalMatchId },
+    const originalProduct = await prisma.product.findFirst({
+      where: { isDeleted: false,  id: feedback.originalMatchId },
     });
     
     if (!originalProduct) continue;

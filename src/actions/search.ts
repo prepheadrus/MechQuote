@@ -28,7 +28,7 @@ export async function performGlobalSearch(query: string): Promise<SearchResult[]
             ],
         },
         take: 5,
-        select: { id: true, name: true, email: true },
+        select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } }, email: { where: { isDeleted: false } } },
     });
 
     const productsPromise = prisma.product.findMany({
@@ -42,7 +42,7 @@ export async function performGlobalSearch(query: string): Promise<SearchResult[]
             ],
         },
         take: 5,
-        select: { id: true, name: true, code: true, brand: true },
+        select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } }, code: { where: { isDeleted: false } }, brand: { where: { isDeleted: false } } },
     });
 
     const proposalsPromise = prisma.proposal.findMany({
@@ -55,7 +55,7 @@ export async function performGlobalSearch(query: string): Promise<SearchResult[]
             ],
         },
         take: 5,
-        select: { id: true, quoteNumber: true, customerName: true, status: true },
+        select: { id: { where: { isDeleted: false } }, quoteNumber: { where: { isDeleted: false } }, customerName: { where: { isDeleted: false } }, status: { where: { isDeleted: false } } },
     });
 
     const invoicesPromise = prisma.invoice.findMany({
@@ -68,7 +68,7 @@ export async function performGlobalSearch(query: string): Promise<SearchResult[]
             ],
         },
         take: 5,
-        select: { id: true, invoiceNumber: true, receiverName: true, senderName: true, type: true },
+        select: { id: { where: { isDeleted: false } }, invoiceNumber: { where: { isDeleted: false } }, receiverName: { where: { isDeleted: false } }, senderName: { where: { isDeleted: false } }, type: { where: { isDeleted: false } } },
     });
 
     const projectsPromise = prisma.project.findMany({
@@ -79,7 +79,7 @@ export async function performGlobalSearch(query: string): Promise<SearchResult[]
             ],
         },
         take: 5,
-        select: { id: true, name: true, customer: { select: { name: true, isDeleted: true } } },
+        select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } }, customer: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } }, isDeleted: { where: { isDeleted: false } } } } },
     });
 
     const [customers, products, proposals, invoices, projects] = await Promise.all([

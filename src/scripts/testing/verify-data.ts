@@ -14,13 +14,13 @@ async function verify() {
     logger.info('📊 Veri Kontrolü:');
 
     const counts = {
-        settings: await prisma.settings.count(),
-        customers: await prisma.customer.count(),
-        products: await prisma.product.count(),
-        suppliers: await prisma.supplier.count(),
-        personnel: await prisma.personnel.count(),
-        proposals: await prisma.proposal.count(),
-        invoices: await prisma.invoice.count(),
+        settings: await prisma.settings.count({ where: { isDeleted: false } }),
+        customers: await prisma.customer.count({ where: { isDeleted: false } }),
+        products: await prisma.product.count({ where: { isDeleted: false } }),
+        suppliers: await prisma.supplier.count({ where: { isDeleted: false } }),
+        personnel: await prisma.personnel.count({ where: { isDeleted: false } }),
+        proposals: await prisma.proposal.count({ where: { isDeleted: false } }),
+        invoices: await prisma.invoice.count({ where: { isDeleted: false } }),
     };
 
     console.table(counts);

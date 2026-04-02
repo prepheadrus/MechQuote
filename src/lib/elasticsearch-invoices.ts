@@ -133,11 +133,11 @@ export async function syncAllInvoices(): Promise<{
   try {
     console.log('[Elasticsearch] Starting full invoices sync...');
 
-    const invoices = await prisma.invoice.findMany({
+    const invoices = await prisma.invoice.findMany({ where: { isDeleted: false },
       include: {
-        customer: true,
-        _count: {
-          select: { items: true },
+        customer: { where: { isDeleted: false } },
+        _count: { where: { isDeleted: false },
+          select: { items: { where: { isDeleted: false } } },
         },
       },
     });
@@ -171,12 +171,12 @@ export async function syncAllInvoices(): Promise<{
 
 export async function syncInvoice(invoiceId: string): Promise<boolean> {
   try {
-    const invoice = await prisma.invoice.findUnique({
-      where: { id: invoiceId },
+    const invoice = await prisma.invoice.findFirst({
+      where: { isDeleted: false,  id: invoiceId },
       include: {
-        customer: true,
-        _count: {
-          select: { items: true },
+        customer: { where: { isDeleted: false } },
+        _count: { where: { isDeleted: false },
+          select: { items: { where: { isDeleted: false } } },
         },
       },
     });
@@ -226,7 +226,7 @@ export async function searchInvoicesWithFallback(
   console.log('[Elasticsearch] Fallback to Prisma for invoices:', query);
 
   const invoices = await prisma.invoice.findMany({
-    where: {
+    where: { isDeleted: false,
       OR: [
         { invoiceNumber: { contains: query } },
         { customer: { name: { contains: query } } },
@@ -235,7 +235,7 @@ export async function searchInvoicesWithFallback(
     },
     take: options.size || 20,
     include: {
-      customer: true,
+      customer: { where: { isDeleted: false } },
     },
   });
 

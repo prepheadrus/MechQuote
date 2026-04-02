@@ -36,9 +36,9 @@ export async function createTemplate(data: {
 
         // Eğer bir kaynak teklif belirtilmişse, kalemleri sunucu tarafında çek
         if (data.sourceProposalId && data.sourceProposalId !== 'none') {
-            const proposal = await prisma.proposal.findUnique({
+            const proposal = await prisma.proposal.findFirst({
                 where: { id: data.sourceProposalId, isDeleted: false },
-                include: { items: true }
+                include: { items: { where: { isDeleted: false } } }
             });
 
             if (proposal && proposal.items) {
@@ -94,7 +94,7 @@ export async function getTemplates() {
 
 export async function deleteTemplate(id: string) {
     try {
-        const template = await prisma.template.findUnique({ 
+        const template = await prisma.template.findFirst({
             where: { id, isDeleted: false } 
         });
         if (template) {
@@ -114,12 +114,12 @@ export async function deleteTemplate(id: string) {
 
 export async function createProposalFromTemplate(templateId: string, customerId: string, projectName: string) {
     try {
-        const template = await prisma.template.findUnique({ where: { id: templateId } });
+        const template = await prisma.template.findFirst({ where: { isDeleted: false,  id: templateId } });
         if (!template) {
             return { success: false, error: 'Şablon bulunamadı.' };
         }
 
-        const customer = await prisma.customer.findUnique({ 
+        const customer = await prisma.customer.findFirst({
             where: { id: customerId, isDeleted: false } 
         });
         if (!customer) {
@@ -141,7 +141,7 @@ export async function createProposalFromTemplate(templateId: string, customerId:
         const lastProposal = await prisma.proposal.findFirst({
             where: { isDeleted: false },
             orderBy: { createdAt: 'desc' },
-            select: { quoteNumber: true }
+            select: { quoteNumber: { where: { isDeleted: false } } }
         });
 
         let nextNumber = 1;
@@ -191,8 +191,8 @@ export async function createProposalFromTemplate(templateId: string, customerId:
                 }
             },
             include: {
-                items: true,
-                customer: true
+                items: { where: { isDeleted: false } },
+                customer: { where: { isDeleted: false } }
             }
         });
 

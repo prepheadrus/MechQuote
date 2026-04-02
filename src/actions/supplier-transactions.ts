@@ -62,8 +62,8 @@ export async function createSupplierTransaction(input: {
 
             // Create Cash Book Entry for Payment transactions
             if (type === 'Payment' && referenceId) {
-                const supplierData = await tx.supplier.findUnique({
-                    where: { id: supplierId }
+                const supplierData = await tx.supplier.findFirst({
+                    where: { isDeleted: false,  id: supplierId }
                 });
 
                 await tx.cashBookEntry.create({

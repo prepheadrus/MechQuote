@@ -295,12 +295,12 @@ export async function matchProduct(name: string, supplierId?: string | null) {
 
     // STEP 1: Check feedback history first (LEARNING!)
     const feedbackMatch = await prisma.feedback.findFirst({
-        where: {
+        where: { isDeleted: false,
             invoiceItemName: { equals: normalizedName },
             type: 'approved'
         },
         orderBy: { createdAt: 'desc' },
-        include: { product: true }
+        include: { product: { where: { isDeleted: false } } }
     });
 
     if (feedbackMatch && feedbackMatch.product) {
@@ -314,12 +314,12 @@ export async function matchProduct(name: string, supplierId?: string | null) {
 
     // STEP 2: Check for corrected feedback
     const correctedMatch = await prisma.feedback.findFirst({
-        where: {
+        where: { isDeleted: false,
             invoiceItemName: { equals: normalizedName },
             type: 'corrected'
         },
         orderBy: { createdAt: 'desc' },
-        include: { product: true }
+        include: { product: { where: { isDeleted: false } } }
     });
 
     if (correctedMatch && correctedMatch.product) {
@@ -333,7 +333,7 @@ export async function matchProduct(name: string, supplierId?: string | null) {
 
     // STEP 3: Exact match
     const exactProduct = await prisma.product.findFirst({
-        where: {
+        where: { isDeleted: false,
             OR: [
                 { name: { equals: normalizedName } },
                 { name: { equals: searchName } }
@@ -344,36 +344,36 @@ export async function matchProduct(name: string, supplierId?: string | null) {
 
     // STEP 4: Check supplier aliases
     if (supplierId) {
-        const supplierAlias = await prisma.productAlias.findUnique({
-            where: {
+        const supplierAlias = await prisma.productAlias.findFirst({
+            where: { isDeleted: false,
                 supplierId_aliasName: {
                     supplierId: supplierId,
                     aliasName: normalizedName
                 }
             },
-            include: { product: true }
+            include: { product: { where: { isDeleted: false } } }
         });
         if (supplierAlias) return { product: supplierAlias.product, method: 'memory-supplier' };
     }
 
     // STEP 5: Check global aliases
     const globalAlias = await prisma.productAlias.findFirst({
-        where: { aliasName: { equals: normalizedName } },
-        include: { product: true },
+        where: { isDeleted: false,  aliasName: { equals: normalizedName } },
+        include: { product: { where: { isDeleted: false } } },
         orderBy: { createdAt: 'desc' }
     });
     if (globalAlias) return { product: globalAlias.product, method: 'memory-global' };
 
     // STEP 6: String-based fuzzy matching with NEW centralized search service
-    const allProducts = await prisma.product.findMany({
-        select: { id: true, name: true, code: true, brand: true, model: true, unit: true, description: true }
+    const allProducts = await prisma.product.findMany({ where: { isDeleted: false },
+        select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } }, code: { where: { isDeleted: false } }, brand: { where: { isDeleted: false } }, model: { where: { isDeleted: false } }, unit: { where: { isDeleted: false } }, description: { where: { isDeleted: false } } }
     });
 
     // Use new searchProducts service for better matching
     const searchResults = searchProducts(allProducts as unknown as Product[], normalizedName);
 
     if (searchResults.length > 0 && searchResults[0].score >= 30) { // Lower threshold for more matches
-        const product = await prisma.product.findUnique({ where: { id: searchResults[0].product.id } });
+        const product = await prisma.product.findFirst({ where: { isDeleted: false,  id: searchResults[0].product.id } });
         return {
             product,
             method: 'fuzzy-v2',
@@ -407,7 +407,7 @@ export async function matchProduct(name: string, supplierId?: string | null) {
 
             if (aiResult && aiResult.confidence > 0.5) {
                 logger.info('[matchProduct] AI semantic match found:', normalizedName, '→', aiResult.productName);
-                const product = await prisma.product.findUnique({ where: { id: aiResult.productId } });
+                const product = await prisma.product.findFirst({ where: { isDeleted: false,  id: aiResult.productId } });
                 return {
                     product,
                     method: 'ai-semantic',
@@ -438,8 +438,8 @@ export async function suggestProductDetails(rawName: string) {
     const codePrefix = cleanedName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'PRD');
     const suggestedCode = `${codePrefix}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    const existingCategories = await prisma.product.findMany({
-        select: { category: true },
+    const existingCategories = await prisma.product.findMany({ where: { isDeleted: false },
+        select: { category: { where: { isDeleted: false } } },
         distinct: ['category']
     });
 
@@ -766,7 +766,7 @@ export async function searchForQuickAdd(text: string) {
     if (tokens.length === 0) return [];
 
     const products = await prisma.product.findMany({
-        where: {
+        where: { isDeleted: false,
             AND: tokens.map(token => ({
                 OR: [
                     { name: { contains: token } },

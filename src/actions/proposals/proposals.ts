@@ -51,9 +51,9 @@ interface ProposalDiffItem {
 async function handleStockReservationOnApproval(tx: any, proposal: any) {
     for (const item of proposal.items) {
         if (item.productId) {
-            const productExists = await tx.product.findUnique({
-                where: { id: item.productId },
-                select: { id: true }
+            const productExists = await tx.product.findFirst({
+                where: { isDeleted: false,  id: item.productId },
+                select: { id: { where: { isDeleted: false } } }
             });
 
             if (productExists) {
@@ -82,9 +82,9 @@ async function handleStockReservationOnApproval(tx: any, proposal: any) {
 async function handleStockReleaseOnCancel(tx: any, proposal: any) {
     for (const item of proposal.items) {
         if (item.productId) {
-            const productExists = await tx.product.findUnique({
-                where: { id: item.productId },
-                select: { id: true }
+            const productExists = await tx.product.findFirst({
+                where: { isDeleted: false,  id: item.productId },
+                select: { id: { where: { isDeleted: false } } }
             });
 
             if (productExists) {
@@ -148,13 +148,14 @@ async function revertCustomerTransactionOnCancel(tx: any, proposal: any) {
         });
     } else {
         // No project: Manual cleanup
-        await tx.customerTransaction.deleteMany({
-            where: {
+        await tx.customerTransaction.updateMany({
+    where: {
                 referenceId: proposal.id,
                 referenceType: 'Proposal',
                 type: 'Debt'
-            }
-        });
+            },
+    data: { isDeleted: true, deletedAt: new Date() }
+});
 
         await tx.customer.update({
             where: { id: proposal.customerId },
@@ -211,7 +212,7 @@ export async function getProposalList(filters?: {
         const proposals = await prisma.proposal.findMany({
             where,
             include: {
-                customer: true,
+                customer: { where: { isDeleted: false } },
                 items: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     orderBy: { orderIndex: 'asc' }
@@ -219,7 +220,7 @@ export async function getProposalList(filters?: {
                 jobAssignments: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     include: {
-                        personnel: true // Tekil ilişki - where desteklenmiyor
+                        personnel: { where: { isDeleted: false } } // Tekil ilişki - where desteklenmiyor
                     }
                 }
             },
@@ -247,7 +248,7 @@ export async function getProposalAnalytics() {
             prisma.proposal.findMany({
                 where: { isDeleted: false },
                 include: {
-                    customer: true,
+                    customer: { where: { isDeleted: false } },
                     items: {
                         where: { isDeleted: false }, // ✅ Soft delete filtresi
                         orderBy: { orderIndex: 'asc' }
@@ -255,7 +256,7 @@ export async function getProposalAnalytics() {
                     jobAssignments: {
                         where: { isDeleted: false }, // ✅ Soft delete filtresi
                         include: {
-                            personnel: true
+                            personnel: { where: { isDeleted: false } }
                         }
                     }
                 },
@@ -263,7 +264,7 @@ export async function getProposalAnalytics() {
             }),
             prisma.customer.findMany({
                 where: { isDeleted: false },
-                select: { id: true, name: true }
+                select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } }
             })
         ]);
 
@@ -302,10 +303,10 @@ export async function getProposalAnalytics() {
  */
 export async function getProposal(id: string) {
     try {
-        const proposal = await prisma.proposal.findUnique({
+        const proposal = await prisma.proposal.findFirst({
             where: { id, isDeleted: false },
             include: {
-                customer: true,
+                customer: { where: { isDeleted: false } },
                 items: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     orderBy: { orderIndex: 'asc' }
@@ -313,7 +314,7 @@ export async function getProposal(id: string) {
                 jobAssignments: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     include: {
-                        personnel: true // Tekil ilişki - where desteklenmiyor
+                        personnel: { where: { isDeleted: false } } // Tekil ilişki - where desteklenmiyor
                     }
                 }
             }
@@ -335,11 +336,11 @@ export async function getProposal(id: string) {
  */
 export async function getProposalForPrint(id: string) {
     try {
-        const proposal = await prisma.proposal.findUnique({
+        const proposal = await prisma.proposal.findFirst({
             where: { id, isDeleted: false },
             include: {
-                customer: true,
-                items: {
+                customer: { where: { isDeleted: false } },
+                items: { where: { isDeleted: false },
                     orderBy: { orderIndex: 'asc' }
                 }
             }
@@ -349,7 +350,7 @@ export async function getProposalForPrint(id: string) {
             return { success: false, error: 'Teklif bulunamadı.' };
         }
 
-        const settings = await prisma.settings.findFirst();
+        const settings = await prisma.settings.findFirst({ where: { isDeleted: false } });
 
         return {
             success: true,
@@ -374,8 +375,8 @@ export async function getProposalVersions(rootProposalId: string) {
         const versions = await prisma.proposal.findMany({
             where: { rootProposalId, isDeleted: false },
             include: {
-                customer: true,
-                items: {
+                customer: { where: { isDeleted: false } },
+                items: { where: { isDeleted: false },
                     orderBy: { orderIndex: 'asc' }
                 }
             },
@@ -439,7 +440,7 @@ export async function createProposal(data: {
                 }
             },
             include: {
-                items: true
+                items: { where: { isDeleted: false } }
             }
         });
 
@@ -478,7 +479,7 @@ export async function updateProposal(
             where: { id },
             data,
             include: {
-                items: true
+                items: { where: { isDeleted: false } }
             }
         });
 
@@ -497,9 +498,9 @@ export async function updateProposal(
 export async function updateProposalStatus(id: string, newStatus: ProposalStatus) {
     try {
         const result = await prisma.$transaction(async (tx) => {
-            const currentProposal = await tx.proposal.findUnique({
+            const currentProposal = await tx.proposal.findFirst({
                 where: { id, isDeleted: false },
-                include: { items: true }
+                include: { items: { where: { isDeleted: false } } }
             });
 
             if (!currentProposal) throw new Error("Teklif bulunamadı.");
@@ -511,7 +512,7 @@ export async function updateProposalStatus(id: string, newStatus: ProposalStatus
             const updatedProposal = await tx.proposal.update({
                 where: { id },
                 data: { status: newStatus },
-                include: { items: true }
+                include: { items: { where: { isDeleted: false } } }
             });
 
             // Handle stock movements
@@ -554,11 +555,11 @@ export async function createProposalVersion(
     versionNote?: string
 ) {
     try {
-        const original = await prisma.proposal.findUnique({
+        const original = await prisma.proposal.findFirst({
             where: { id: originalId, isDeleted: false },
             include: {
-                items: true,
-                jobAssignments: true
+                items: { where: { isDeleted: false } },
+                jobAssignments: { where: { isDeleted: false } }
             }
         });
 
@@ -578,7 +579,7 @@ export async function createProposalVersion(
         let baseQuoteNumber = original.quoteNumber;
         // If original is a version (not root), fetch root to get clean number
         if (original.rootProposalId && original.rootProposalId !== original.id) {
-            const root = await prisma.proposal.findUnique({ where: { id: original.rootProposalId } });
+            const root = await prisma.proposal.findFirst({ where: { isDeleted: false,  id: original.rootProposalId } });
             if (root) baseQuoteNumber = root.quoteNumber;
         }
         // If original is root, baseQuoteNumber is already correct (e.g. "Q-001")
@@ -620,7 +621,7 @@ export async function createProposalVersion(
                 }
             },
             include: {
-                items: true
+                items: { where: { isDeleted: false } }
             }
         });
 
@@ -643,14 +644,14 @@ export async function copyProposalToCustomer(
     try {
         logger.info(`[copyProposalToCustomer] Copying ${originalId} to ${targetCustomerId}`);
         const [original, targetCustomer, settings] = await Promise.all([
-            prisma.proposal.findUnique({
+            prisma.proposal.findFirst({
                 where: { id: originalId, isDeleted: false },
-                include: { items: true }
+                include: { items: { where: { isDeleted: false } } }
             }),
-            prisma.customer.findUnique({ 
+            prisma.customer.findFirst({
                 where: { id: targetCustomerId, isDeleted: false } 
             }),
-            prisma.settings.findFirst()
+            prisma.settings.findFirst({ where: { isDeleted: false } })
         ]);
 
         if (!original) {
@@ -739,7 +740,7 @@ export async function copyProposalToCustomer(
                 }
             },
             include: {
-                items: true
+                items: { where: { isDeleted: false } }
             }
         });
 
@@ -764,7 +765,7 @@ export async function copyProposalToCustomer(
 export async function deleteProposal(id: string) {
     try {
         // Loglama için silinmeden önce veriyi çek
-        const proposal = await prisma.proposal.findUnique({ 
+        const proposal = await prisma.proposal.findFirst({
             where: { id, isDeleted: false } 
         });
 
@@ -805,9 +806,7 @@ export async function updateProposalItems(
     try {
         const updatedProposal = await prisma.$transaction(async (tx) => {
             // Delete existing items
-            await tx.proposalItem.deleteMany({
-                where: { proposalId },
-            });
+            await tx.proposalItem.updateMany({ where: { proposalId }, data: { isDeleted: true, deletedAt: new Date() } });
 
             // Create new items one by one to handle groupDescription
             for (const item of items) {
@@ -818,14 +817,15 @@ export async function updateProposalItems(
                         proposalId,
                         // groupDescription'ı manuel ekle (Prisma Client'da henüz yok)
                         ...(groupDescription ? { groupDescription } : {})
-                    }
-                });
+                    },
+    data: { isDeleted: true, deletedAt: new Date() }
+});
             }
 
             // Recalculate total amount
-            const proposalWithNewItems = await tx.proposal.findUnique({
-                where: { id: proposalId },
-                include: { items: true }
+            const proposalWithNewItems = await tx.proposal.findFirst({
+                where: { isDeleted: false,  id: proposalId },
+                include: { items: { where: { isDeleted: false } } }
             });
 
             if (!proposalWithNewItems) {
@@ -895,9 +895,9 @@ export async function updateProposalItemCosts(
             }
 
             // Recalculate total amount
-            const proposal = await tx.proposal.findUnique({
-                where: { id: proposalId },
-                include: { items: true }
+            const proposal = await tx.proposal.findFirst({
+                where: { isDeleted: false,  id: proposalId },
+                include: { items: { where: { isDeleted: false } } }
             });
 
             if (!proposal) throw new Error("Teklif bulunamadı.");
@@ -936,13 +936,13 @@ export async function updateProposalItemCosts(
 export async function getProposalDiff(oldProposalId: string, newProposalId: string) {
     try {
         const [oldP, newP] = await prisma.$transaction([
-            prisma.proposal.findUnique({
+            prisma.proposal.findFirst({
                 where: { id: oldProposalId, isDeleted: false },
-                include: { items: true }
+                include: { items: { where: { isDeleted: false } } }
             }),
-            prisma.proposal.findUnique({
+            prisma.proposal.findFirst({
                 where: { id: newProposalId, isDeleted: false },
-                include: { items: true }
+                include: { items: { where: { isDeleted: false } } }
             })
         ]);
 
@@ -1110,7 +1110,7 @@ export async function createProposalVersionFromData(
     }
 ) {
     try {
-        const original = await prisma.proposal.findUnique({
+        const original = await prisma.proposal.findFirst({
             where: { id: originalId, isDeleted: false },
         });
 
@@ -1127,7 +1127,7 @@ export async function createProposalVersionFromData(
 
         let baseQuoteNumber = original.quoteNumber;
         if (original.rootProposalId && original.rootProposalId !== original.id) {
-            const root = await prisma.proposal.findUnique({ where: { id: original.rootProposalId } });
+            const root = await prisma.proposal.findFirst({ where: { isDeleted: false,  id: original.rootProposalId } });
             if (root) baseQuoteNumber = root.quoteNumber;
         }
         if (baseQuoteNumber.includes('-v')) {
@@ -1177,7 +1177,7 @@ export async function createProposalVersionFromData(
                 }
             },
             include: {
-                items: true
+                items: { where: { isDeleted: false } }
             }
         });
 

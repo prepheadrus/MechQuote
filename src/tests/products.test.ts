@@ -569,7 +569,7 @@ describe('Products Actions', () => {
     describe('getProduct', () => {
         it('should return single product - HAPPY PATH', async () => {
             // Arrange
-            (prisma.product.findUnique as jest.Mock).mockResolvedValue(mockProducts[0]);
+            (prisma.product.findFirst as jest.Mock).mockResolvedValue(mockProducts[0]);
 
             // Act
             const result = await getProduct('1');
@@ -582,7 +582,7 @@ describe('Products Actions', () => {
 
         it('should return null for non-existent product - EDGE CASE', async () => {
             // Arrange
-            (prisma.product.findUnique as jest.Mock).mockResolvedValue(null);
+            (prisma.product.findFirst as jest.Mock).mockResolvedValue(null);
 
             // Act
             const result = await getProduct('non-existent');
@@ -594,7 +594,7 @@ describe('Products Actions', () => {
 
         it('should handle database error - ERROR HANDLING', async () => {
             // Arrange
-            (prisma.product.findUnique as jest.Mock).mockRejectedValue(new Error('DB error'));
+            (prisma.product.findFirst as jest.Mock).mockRejectedValue(new Error('DB error'));
 
             // Act
             const result = await getProduct('1');
@@ -608,9 +608,9 @@ describe('Products Actions', () => {
     describe('getProductDetails', () => {
         it('should return product with full details - HAPPY PATH', async () => {
             // Arrange
-            (prisma.product.findUnique as jest.Mock).mockResolvedValue(mockProducts[0]);
-            (prisma.supplier.findUnique as jest.Mock).mockResolvedValue(mockSuppliers[0]);
-            (prisma.installationType.findUnique as jest.Mock).mockResolvedValue(mockCategories[0]);
+            (prisma.product.findFirst as jest.Mock).mockResolvedValue(mockProducts[0]);
+            (prisma.supplier.findFirst as jest.Mock).mockResolvedValue(mockSuppliers[0]);
+            (prisma.installationType.findFirst as jest.Mock).mockResolvedValue(mockCategories[0]);
             (prisma.purchaseHistory.findMany as jest.Mock).mockResolvedValue([]);
             (prisma.proposalItem.findMany as jest.Mock).mockResolvedValue(mockProposalItems);
 
@@ -628,7 +628,7 @@ describe('Products Actions', () => {
 
         it('should return error for non-existent product - EDGE CASE', async () => {
             // Arrange
-            (prisma.product.findUnique as jest.Mock).mockResolvedValue(null);
+            (prisma.product.findFirst as jest.Mock).mockResolvedValue(null);
 
             // Act
             const result = await getProductDetails('non-existent');
@@ -641,9 +641,9 @@ describe('Products Actions', () => {
         it('should handle product without supplier - EDGE CASE', async () => {
             // Arrange
             const productWithoutSupplier = { ...mockProducts[0], supplierId: null };
-            (prisma.product.findUnique as jest.Mock).mockResolvedValue(productWithoutSupplier);
-            (prisma.supplier.findUnique as jest.Mock).mockResolvedValue(null);
-            (prisma.installationType.findUnique as jest.Mock).mockResolvedValue(null);
+            (prisma.product.findFirst as jest.Mock).mockResolvedValue(productWithoutSupplier);
+            (prisma.supplier.findFirst as jest.Mock).mockResolvedValue(null);
+            (prisma.installationType.findFirst as jest.Mock).mockResolvedValue(null);
             (prisma.purchaseHistory.findMany as jest.Mock).mockResolvedValue([]);
             (prisma.proposalItem.findMany as jest.Mock).mockResolvedValue([]);
 
@@ -657,7 +657,7 @@ describe('Products Actions', () => {
 
         it('should handle database error - ERROR HANDLING', async () => {
             // Arrange
-            (prisma.product.findUnique as jest.Mock).mockRejectedValue(new Error('DB error'));
+            (prisma.product.findFirst as jest.Mock).mockRejectedValue(new Error('DB error'));
 
             // Act
             const result = await getProductDetails('1');
@@ -753,7 +753,7 @@ describe('Products Actions', () => {
             // Arrange
             const oldProduct = mockProducts[0];
             const updatedProduct = { ...oldProduct, listPrice: 200 };
-            (prisma.product.findUnique as jest.Mock).mockResolvedValue(oldProduct);
+            (prisma.product.findFirst as jest.Mock).mockResolvedValue(oldProduct);
             (prisma.product.update as jest.Mock).mockResolvedValue(updatedProduct);
 
             // Act
@@ -770,7 +770,7 @@ describe('Products Actions', () => {
         it('should normalize discount rate on update - EDGE CASE', async () => {
             // Arrange
             const oldProduct = mockProducts[0];
-            (prisma.product.findUnique as jest.Mock).mockResolvedValue(oldProduct);
+            (prisma.product.findFirst as jest.Mock).mockResolvedValue(oldProduct);
             (prisma.product.update as jest.Mock).mockResolvedValue({
                 ...oldProduct,
                 discountRate: 0.25,
@@ -792,7 +792,7 @@ describe('Products Actions', () => {
 
         it('should handle update error - ERROR HANDLING', async () => {
             // Arrange
-            (prisma.product.findUnique as jest.Mock).mockResolvedValue(mockProducts[0]);
+            (prisma.product.findFirst as jest.Mock).mockResolvedValue(mockProducts[0]);
             (prisma.product.update as jest.Mock).mockRejectedValue(new Error('Update failed'));
 
             // Act

@@ -191,10 +191,10 @@ export async function syncAllProducts(): Promise<{
     console.log('[Elasticsearch] Starting full products sync...');
 
     // Fetch all products with relations
-    const products = await prisma.product.findMany({
+    const products = await prisma.product.findMany({ where: { isDeleted: false },
       include: {
-        _count: {
-          select: { invoiceItems: true },
+        _count: { where: { isDeleted: false },
+          select: { invoiceItems: { where: { isDeleted: false } } },
         },
       },
     });
@@ -234,11 +234,11 @@ export async function syncAllProducts(): Promise<{
 export async function syncProduct(productId: string): Promise<boolean> {
   try {
     // Fetch product with relations
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
+    const product = await prisma.product.findFirst({
+      where: { isDeleted: false,  id: productId },
       include: {
-        _count: {
-          select: { invoiceItems: true },
+        _count: { where: { isDeleted: false },
+          select: { invoiceItems: { where: { isDeleted: false } } },
         },
       },
     });
@@ -312,7 +312,7 @@ export async function searchProductsWithFallback(
   console.log('[Elasticsearch] Fallback to Prisma for query:', query);
   
   const products = await prisma.product.findMany({
-    where: {
+    where: { isDeleted: false,
       OR: [
         { name: { contains: query } },
         { brand: { contains: query } },

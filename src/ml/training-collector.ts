@@ -33,9 +33,9 @@ export async function collectTrainingData(
     // Eğer productName "Unknown Product" ise, database'den çek
     let finalProductName = productName;
     if (productName === 'Unknown Product' || !productName) {
-      const product = await prisma.product.findUnique({
-        where: { id: productId },
-        select: { name: true }
+      const product = await prisma.product.findFirst({
+        where: { isDeleted: false,  id: productId },
+        select: { name: { where: { isDeleted: false } } }
       });
       if (product) {
         finalProductName = product.name;
@@ -59,7 +59,7 @@ export async function collectTrainingData(
 
     // 100+ eşleşme var mı kontrol et
     const totalFeedback = await prisma.feedback.count({
-      where: {
+      where: { isDeleted: false,
         type: { in: ['approved', 'corrected'] },
       },
     });
@@ -111,14 +111,14 @@ export async function backfillTrainingData(): Promise<{ success: boolean; count:
   try {
     // Tüm onaylanmış eşleşmeleri bul
     const invoiceItems = await prisma.invoiceItem.findMany({
-      where: {
+      where: { isDeleted: false,
         linkedProductId: {
           not: null,
         },
       },
       include: {
-        invoice: true,
-        product: true,
+        invoice: { where: { isDeleted: false } },
+        product: { where: { isDeleted: false } },
       },
       take: 1000,
     });
@@ -130,7 +130,7 @@ export async function backfillTrainingData(): Promise<{ success: boolean; count:
 
       // Zaten feedback var mı kontrol et
       const existingFeedback = await prisma.feedback.findFirst({
-        where: {
+        where: { isDeleted: false,
           invoiceItemId: item.id,
         },
       });
@@ -173,18 +173,18 @@ export async function backfillTrainingData(): Promise<{ success: boolean; count:
  */
 export async function getTrainingStats() {
   try {
-    const totalFeedback = await prisma.feedback.count();
+    const totalFeedback = await prisma.feedback.count({ where: { isDeleted: false } });
     const approvedCount = await prisma.feedback.count({
-      where: { type: 'approved' },
+      where: { isDeleted: false,  type: 'approved' },
     });
     const correctedCount = await prisma.feedback.count({
-      where: { type: 'corrected' },
+      where: { isDeleted: false,  type: 'corrected' },
     });
     const rejectedCount = await prisma.feedback.count({
-      where: { type: 'rejected' },
+      where: { isDeleted: false,  type: 'rejected' },
     });
 
-    const recentFeedback = await prisma.feedback.findMany({
+    const recentFeedback = await prisma.feedback.findMany({ where: { isDeleted: false },
       orderBy: { createdAt: 'desc' },
       take: 10,
     });

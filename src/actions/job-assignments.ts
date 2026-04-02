@@ -41,12 +41,12 @@ export async function updateJobAssignmentPayment(assignmentId: string, data: {
 }) {
     try {
         // 1. Fetch the existing assignment to get projectId and current history
-        const oldAssignment = await prisma.jobAssignment.findUnique({
+        const oldAssignment = await prisma.jobAssignment.findFirst({
             where: { id: assignmentId, isDeleted: false },
             include: {
-                personnel: true,
-                proposal: {
-                    select: { projectId: true }
+                personnel: { where: { isDeleted: false } },
+                proposal: { where: { isDeleted: false },
+                    select: { projectId: { where: { isDeleted: false } } }
                 }
             }
         });
@@ -83,7 +83,7 @@ export async function updateJobAssignmentPayment(assignmentId: string, data: {
         if (newPayments.length > 0) {
             const paymentIds = newPayments.map((p: any) => p.id);
             const existingExpenses = await prisma.projectExpense.findMany({
-                where: { id: { in: paymentIds } }
+                where: { isDeleted: false,  id: { in: paymentIds } }
             });
             const existingIds = new Set(existingExpenses.map(e => e.id));
 
@@ -114,7 +114,7 @@ export async function updateJobAssignmentPayment(assignmentId: string, data: {
         if (updatedPayments.length > 0) {
             const updateIds = updatedPayments.map((p: any) => p.id);
             const existingToUpdate = await prisma.projectExpense.findMany({
-                where: { id: { in: updateIds } }
+                where: { isDeleted: false,  id: { in: updateIds } }
             });
             
             const existingMap = new Map(existingToUpdate.map(e => [e.id, e]));
@@ -143,7 +143,7 @@ export async function updateJobAssignmentPayment(assignmentId: string, data: {
         if (newPayments.length > 0) {
             const paymentIds = newPayments.map((p: any) => p.id);
             const existingTxs = await prisma.personnelTransaction.findMany({
-                where: { id: { in: paymentIds } }
+                where: { isDeleted: false,  id: { in: paymentIds } }
             });
             const existingIds = new Set(existingTxs.map(e => e.id));
 
@@ -182,7 +182,7 @@ export async function updateJobAssignmentPayment(assignmentId: string, data: {
         if (updatedPayments.length > 0) {
             const updateIds = updatedPayments.map((p: any) => p.id);
             const existingToUpdate = await prisma.personnelTransaction.findMany({
-                where: { id: { in: updateIds } }
+                where: { isDeleted: false,  id: { in: updateIds } }
             });
             
             const existingMap = new Map(existingToUpdate.map(e => [e.id, e]));
@@ -223,7 +223,7 @@ export async function updateJobAssignmentPayment(assignmentId: string, data: {
         if (removedPayments.length > 0) {
             const removeIds = removedPayments.map((p: any) => p.id);
             const txsToRemove = await prisma.personnelTransaction.findMany({
-                where: { id: { in: removeIds } }
+                where: { isDeleted: false,  id: { in: removeIds } }
             });
 
             if (txsToRemove.length > 0) {
@@ -267,13 +267,13 @@ export async function updateJobAssignmentPayment(assignmentId: string, data: {
 
 export async function getJobAssignment(id: string) {
     try {
-        const assignment = await prisma.jobAssignment.findUnique({
+        const assignment = await prisma.jobAssignment.findFirst({
             where: { id, isDeleted: false },
             include: {
-                personnel: true,
-                proposal: {
+                personnel: { where: { isDeleted: false } },
+                proposal: { where: { isDeleted: false },
                     include: {
-                        project: true
+                        project: { where: { isDeleted: false } }
                     }
                 }
             }
@@ -289,10 +289,10 @@ export async function getJobAssignments() {
         const assignments = await prisma.jobAssignment.findMany({
             where: { isDeleted: false },
             include: {
-                personnel: true,
-                proposal: {
+                personnel: { where: { isDeleted: false } },
+                proposal: { where: { isDeleted: false },
                     include: {
-                        project: true
+                        project: { where: { isDeleted: false } }
                     }
                 }
             },
@@ -333,8 +333,8 @@ export async function createJobAssignment(data: {
         }
         
         // ✅ VALIDATION: Personnel var mı kontrol et
-        const personnel = await prisma.personnel.findUnique({
-            where: { id: cleanedData.personnelId }
+        const personnel = await prisma.personnel.findFirst({
+            where: { isDeleted: false,  id: cleanedData.personnelId }
         });
         
         if (!personnel) {
@@ -343,8 +343,8 @@ export async function createJobAssignment(data: {
         
         // ✅ VALIDATION: Proposal ID varsa var mı kontrol et
         if (cleanedData.proposalId) {
-            const proposal = await prisma.proposal.findUnique({
-                where: { id: cleanedData.proposalId }
+            const proposal = await prisma.proposal.findFirst({
+                where: { isDeleted: false,  id: cleanedData.proposalId }
             });
             
             if (!proposal) {
@@ -354,8 +354,8 @@ export async function createJobAssignment(data: {
         
         // ✅ VALIDATION: Project ID varsa var mı kontrol et
         if (cleanedData.projectId) {
-            const project = await prisma.project.findUnique({
-                where: { id: cleanedData.projectId }
+            const project = await prisma.project.findFirst({
+                where: { isDeleted: false,  id: cleanedData.projectId }
             });
             
             if (!project) {
@@ -446,9 +446,9 @@ export async function updateJobAssignment(id: string, data: {
 export async function deleteJobAssignment(id: string) {
     try {
         // ✅ isDeleted filtresi kaldırıldı - zaten silinmiş assignment'ları da bulabilmeli
-        const assignment = await prisma.jobAssignment.findUnique({
-            where: { id },
-            include: { personnel: true }
+        const assignment = await prisma.jobAssignment.findFirst({
+            where: { isDeleted: false,  id },
+            include: { personnel: { where: { isDeleted: false } } }
         });
 
         if (!assignment) return { success: false, error: "Atama bulunamadı." };

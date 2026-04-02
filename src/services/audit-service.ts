@@ -29,7 +29,7 @@ export async function createAuditLog(
 
 export async function getAuditLogs(limit: number = 50): Promise<AuditLog[]> {
     try {
-        const logs = await prisma.auditLog.findMany({
+        const logs = await prisma.auditLog.findMany({ where: { isDeleted: false },
             orderBy: {
                 createdAt: "desc",
             },

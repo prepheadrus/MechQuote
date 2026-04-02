@@ -17,7 +17,7 @@ export async function getRecipes() {
         const recipes = await prisma.recipe.findMany({
             where: { isDeleted: false },
             include: {
-                recipeItems: true
+                recipeItems: { where: { isDeleted: false } }
             }
         });
         return { success: true, data: recipes };
@@ -32,11 +32,11 @@ export async function getRecipes() {
  */
 export async function getRecipe(productId: string) {
     try {
-        const recipe = await prisma.recipe.findUnique({
+        const recipe = await prisma.recipe.findFirst({
             where: { productId, isDeleted: false },
             include: {
-                product: true,
-                recipeItems: {
+                product: { where: { isDeleted: false } },
+                recipeItems: { where: { isDeleted: false },
                     orderBy: {
                         orderIndex: 'asc'
                     }
@@ -67,9 +67,10 @@ export async function saveRecipe(productId: string, items: RecipeItemInput[]) {
             });
 
             // First, delete all existing items for this recipe
-            await tx.recipeItem.deleteMany({
-                where: { recipeId: recipe.id }
-            });
+            await tx.recipeItem.updateMany({
+    where: { recipeId: recipe.id },
+    data: { isDeleted: true, deletedAt: new Date() }
+});
 
             // Then, create the new items
             if (items.length > 0) {
@@ -88,9 +89,9 @@ export async function saveRecipe(productId: string, items: RecipeItemInput[]) {
         revalidatePath('/recipes');
         revalidatePath(`/products/${productId}`);
 
-        const updatedRecipeWithItems = await prisma.recipe.findUnique({
-            where: { id: savedRecipe.id },
-            include: { recipeItems: true }
+        const updatedRecipeWithItems = await prisma.recipe.findFirst({
+            where: { isDeleted: false,  id: savedRecipe.id },
+            include: { recipeItems: { where: { isDeleted: false } } }
         });
 
         return { success: true, data: updatedRecipeWithItems };
@@ -134,7 +135,7 @@ export async function getProductsWithRecipes() {
                 recipe: {
                     where: { isDeleted: false },
                     include: {
-                        recipeItems: true
+                        recipeItems: { where: { isDeleted: false } }
                     }
                 }
             },
@@ -162,7 +163,7 @@ export async function getRecipePageData() {
             prisma.recipe.findMany({
                 where: { isDeleted: false },
                 include: {
-                    recipeItems: true
+                    recipeItems: { where: { isDeleted: false } }
                 }
             }),
             prisma.laborCost.findMany({

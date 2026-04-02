@@ -42,8 +42,8 @@ export async function getPersonnel() {
                         proposal: {
                             where: { isDeleted: false }, // ✅ Nested filtre
                             include: {
-                                project: true, // Tekil ilişki - where desteklenmiyor
-                                customer: true // Tekil ilişki - where desteklenmiyor
+                                project: { where: { isDeleted: false } }, // Tekil ilişki - where desteklenmiyor
+                                customer: { where: { isDeleted: false } } // Tekil ilişki - where desteklenmiyor
                             }
                         }
                     }
@@ -51,8 +51,8 @@ export async function getPersonnel() {
                 transactions: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     include: {
-                        project: {
-                            select: { name: true }
+                        project: { where: { isDeleted: false },
+                            select: { name: { where: { isDeleted: false } } }
                         }
                     },
                     orderBy: { date: 'desc' }
@@ -88,7 +88,7 @@ export async function getActivePersonnel() {
  */
 export async function getPersonnelById(id: string) {
     try {
-        const personnel = await prisma.personnel.findUnique({
+        const personnel = await prisma.personnel.findFirst({
             where: { id, isDeleted: false },
             include: {
                 assignments: {
@@ -97,7 +97,7 @@ export async function getPersonnelById(id: string) {
                         proposal: {
                             where: { isDeleted: false }, // ✅ Nested filtre
                             include: {
-                                customer: true // Tekil ilişki - where desteklenmiyor
+                                customer: { where: { isDeleted: false } } // Tekil ilişki - where desteklenmiyor
                             }
                         }
                     },
@@ -183,8 +183,8 @@ export async function getPersonnelTransactions(personnelId: string) {
         const transactions = await extendedPrisma.personnelTransaction.findMany({
             where: { personnelId },
             include: {
-                project: {
-                    select: { name: true }
+                project: { where: { isDeleted: false },
+                    select: { name: { where: { isDeleted: false } } }
                 }
             },
             orderBy: { date: 'desc' }

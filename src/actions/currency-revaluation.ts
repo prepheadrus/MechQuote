@@ -36,7 +36,7 @@ export async function calculateCurrencyRevaluation(
   try {
     // Get all transactions for this customer (we'll filter by description)
     const transactions = await prisma.customerTransaction.findMany({
-      where: {
+      where: { isDeleted: false,
         customerId,
         category: 'Dövizli İşlem' // Transactions with this category are foreign currency
       }
@@ -62,8 +62,8 @@ export async function calculateCurrencyRevaluation(
 
     // Create revaluation transaction if there's a difference
     if (Math.abs(totalDifference) > 0.01) { // Avoid floating point issues
-      const customer = await prisma.customer.findUnique({
-        where: { id: customerId }
+      const customer = await prisma.customer.findFirst({
+        where: { isDeleted: false,  id: customerId }
       });
 
       await prisma.customerTransaction.create({
@@ -125,7 +125,7 @@ export async function calculateBulkCurrencyRevaluation(
 
     // Get all customers with foreign currency transactions
     const customers = await prisma.customer.findMany({
-      where: {
+      where: { isDeleted: false,
         transactions: {
           some: {
             category: 'Dövizli İşlem'
@@ -183,7 +183,7 @@ export async function calculateBulkCurrencyRevaluation(
 export async function getCurrencyExposure(customerId: string) {
   try {
     const transactions = await prisma.customerTransaction.findMany({
-      where: {
+      where: { isDeleted: false,
         customerId,
         category: 'Dövizli İşlem'
       }

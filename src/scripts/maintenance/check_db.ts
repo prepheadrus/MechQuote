@@ -6,8 +6,8 @@ async function main() {
     const quoteNumber = 'RP-2602-6054425';
 
     const proposal = await prisma.proposal.findFirst({
-        where: { quoteNumber },
-        include: { items: true }
+        where: { isDeleted: false,  quoteNumber },
+        include: { items: { where: { isDeleted: false } } }
     });
 
     if (!proposal) {

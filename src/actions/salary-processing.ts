@@ -40,7 +40,7 @@ export async function processMonthlySalaries(
 
     // Get all active personnel
     const personnel = await prisma.personnel.findMany({
-      where: { status: 'Aktif' }
+      where: { isDeleted: false,  status: 'Aktif' }
     });
 
     logger.info(`Toplam ${personnel.length} personel için maaş işleniyor...`);
@@ -62,7 +62,7 @@ export async function processMonthlySalaries(
 
         // Check if salary already processed for this month
         const existingTransaction = await prisma.personnelTransaction.findFirst({
-          where: {
+          where: { isDeleted: false,
             personnelId: p.id,
             category: 'Maaş',
             date: {
@@ -159,7 +159,7 @@ export async function processMonthlySalaries(
 export async function getSalaryProcessingStatus(month: number, year: number) {
   try {
     const transactions = await prisma.personnelTransaction.findMany({
-      where: {
+      where: { isDeleted: false,
         category: 'Maaş',
         date: {
           gte: new Date(year, month - 1, 1),
@@ -167,18 +167,18 @@ export async function getSalaryProcessingStatus(month: number, year: number) {
         }
       },
       include: {
-        personnel: {
+        personnel: { where: { isDeleted: false },
           select: {
-            id: true,
-            name: true,
-            status: true
+            id: { where: { isDeleted: false } },
+            name: { where: { isDeleted: false } },
+            status: { where: { isDeleted: false } }
           }
         }
       }
     });
 
     const activePersonnel = await prisma.personnel.count({
-      where: { status: 'Aktif' }
+      where: { isDeleted: false,  status: 'Aktif' }
     });
 
     const processedCount = transactions.length;
@@ -225,16 +225,16 @@ export async function getPendingSalaries(
     const targetYear = year || now.getFullYear();
 
     const activePersonnel = await prisma.personnel.findMany({
-      where: { status: 'Aktif' },
+      where: { isDeleted: false,  status: 'Aktif' },
       select: {
-        id: true,
-        name: true,
-        balance: true
+        id: { where: { isDeleted: false } },
+        name: { where: { isDeleted: false } },
+        balance: { where: { isDeleted: false } }
       }
     });
 
     const processedPersonnelIds = await prisma.personnelTransaction.findMany({
-      where: {
+      where: { isDeleted: false,
         category: 'Maaş',
         date: {
           gte: new Date(targetYear, targetMonth - 1, 1),
@@ -242,7 +242,7 @@ export async function getPendingSalaries(
         }
       },
       select: {
-        personnelId: true
+        personnelId: { where: { isDeleted: false } }
       }
     });
 

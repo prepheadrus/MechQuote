@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     
     // Count total feedback samples
     const totalFeedback = await prisma.feedback.count({
-      where: {
+      where: { isDeleted: false,
         type: { in: ['approved', 'corrected'] }
       }
     });
@@ -67,11 +67,11 @@ export async function GET(request: NextRequest) {
 
     // Collect training data
     const feedbackData = await prisma.feedback.findMany({
-      where: {
+      where: { isDeleted: false,
         type: { in: ['approved', 'corrected'] },
       },
       include: {
-        product: true,
+        product: { where: { isDeleted: false } },
       },
       take: 1000,
     });

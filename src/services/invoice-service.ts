@@ -143,7 +143,7 @@ export async function getInvoicesWithAnalytics() {
  */
 export async function getInvoice(id: string) {
     try {
-        const invoice = await prisma.invoice.findUnique({
+        const invoice = await prisma.invoice.findFirst({
             where: { id, isDeleted: false }, // ✅ Soft delete filtresi
             include: {
                 customer: {
@@ -276,7 +276,7 @@ export async function createInvoice(data: {
     // Check for existing invoice to prevent duplicates
     if (data.invoiceNumber) {
         const existing = await prisma.invoice.findFirst({
-            where: {
+            where: { isDeleted: false,
                 invoiceNumber: data.invoiceNumber,
                 // Check uniqueness by Tax ID OR Name + Number
                 OR: [
@@ -289,7 +289,7 @@ export async function createInvoice(data: {
         // Also check by ETTSN if available (Strongest check)
         if (!existing && data.ettsn) {
             const existingEttsn = await prisma.invoice.findFirst({
-                where: { ettsn: data.ettsn }
+                where: { isDeleted: false,  ettsn: data.ettsn }
             });
             if (existingEttsn) {
                 return { success: false, error: `Bu ETTSN ile fatura zaten kayıtlı! (Fatura No: ${existingEttsn.invoiceNumber})` };
@@ -357,7 +357,7 @@ export async function createInvoice(data: {
                     }
                 },
                 include: {
-                    items: true
+                    items: { where: { isDeleted: false } }
                 }
             });
 
@@ -469,7 +469,7 @@ export async function updateInvoice(
             where: { id },
             data: updateData,
             include: {
-                items: true
+                items: { where: { isDeleted: false } }
             }
         });
 
@@ -518,18 +518,17 @@ export async function deleteInvoice(id: string) {
     try {
         await prisma.$transaction(async (tx) => {
             // 1. Delete associated purchase history first (FK reference)
-            await tx.purchaseHistory.deleteMany({
-                where: { invoiceId: id }
-            });
+            await tx.purchaseHistory.updateMany({
+    where: { invoiceId: id },
+    data: { isDeleted: true, deletedAt: new Date() }
+});
 
             // 2. Delete the invoice
-            await tx.invoice.delete({
-                where: { id }
-            });
+            await tx.invoice.update({ where: { id }, data: { isDeleted: true, deletedAt: new Date() } });
 
             // 3. Delete associated Transaction (Inline logic to ensure atomicity)
             const transactions = await tx.customerTransaction.findMany({
-                where: { referenceId: id }
+                where: { isDeleted: false,  referenceId: id }
             });
 
             for (const transaction of transactions) {
@@ -538,7 +537,7 @@ export async function deleteInvoice(id: string) {
                     where: { id: transaction.customerId },
                     data: { balance: { decrement: transaction.amount } }
                 });
-                await tx.customerTransaction.delete({ where: { id: transaction.id } });
+                await tx.customerTransaction.update({ where: { id: transaction.id }, data: { isDeleted: true, deletedAt: new Date() } });
             }
         });
 
@@ -609,8 +608,8 @@ export async function cancelInvoice(
 
             // B. Customer Balance: Create reversal transaction
             if (options.modules.customerBalance) {
-                const invoice = await tx.invoice.findUnique({
-                    where: { id },
+                const invoice = await tx.invoice.findFirst({
+                    where: { isDeleted: false,  id },
                     include: { customer: true }
                 });
 
@@ -639,13 +638,13 @@ export async function cancelInvoice(
             // C. Stock: Reverse stock movements
             if (options.modules.stock) {
                 // Get invoice number for description
-                const invoiceForStock = await tx.invoice.findUnique({
-                    where: { id },
-                    select: { invoiceNumber: true }
+                const invoiceForStock = await tx.invoice.findFirst({
+                    where: { isDeleted: false,  id },
+                    select: { invoiceNumber: { where: { isDeleted: false } } }
                 });
                 
                 const invoiceItems = await tx.invoiceItem.findMany({
-                    where: { invoiceId: id },
+                    where: { isDeleted: false,  invoiceId: id },
                     include: { product: true }
                 });
 
@@ -848,7 +847,7 @@ export async function findSuggestedProductId(invoiceItemName: string) {
         // Ideally we should use full-text search or normalized columns, 
         // but for now strict insensitive match is a good 'memory' feature.
         const previousMatch = await prisma.invoiceItem.findFirst({
-            where: {
+            where: { isDeleted: false,
                 name: {
                     equals: normalizedName,
                     // mode: 'insensitive' // Postgres only feature usually, check DB provider. 
@@ -866,7 +865,7 @@ export async function findSuggestedProductId(invoiceItemName: string) {
                 }
             },
             select: {
-                linkedProductId: true
+                linkedProductId: { where: { isDeleted: false } }
             }
         });
 

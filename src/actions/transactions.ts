@@ -12,8 +12,8 @@ import { logger } from '@/lib/logger';
 export async function getProjectTransactions(projectId: string) {
     try {
         const transactions = await prisma.projectExpense.findMany({
-            where: { projectId },
-            include: { supplier: { select: { name: true } } },
+            where: { isDeleted: false,  projectId },
+            include: { supplier: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } } },
             orderBy: { date: 'desc' }
         });
         return { success: true, data: transactions };
@@ -28,8 +28,8 @@ export async function getProjectTransactions(projectId: string) {
  */
 export async function getAllProjectExpenses() {
     try {
-        const transactions = await prisma.projectExpense.findMany({
-            include: { project: { select: { name: true } }, supplier: { select: { name: true } } },
+        const transactions = await prisma.projectExpense.findMany({ where: { isDeleted: false },
+            include: { project: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } }, supplier: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } } },
             orderBy: { date: 'desc' }
         });
         return { success: true, data: transactions };
@@ -54,9 +54,9 @@ export async function createTransaction(data: {
     try {
         logger.info(`[CreateTransaction] Starting transaction creation for Project: ${data.projectId}, Type: ${data.type}, Amount: ${data.amount}`);
 
-        const project = await prisma.project.findUnique({
-            where: { id: data.projectId },
-            select: { customerId: true, name: true }
+        const project = await prisma.project.findFirst({
+            where: { isDeleted: false,  id: data.projectId },
+            select: { customerId: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } }
         });
 
         if (!project) {
@@ -131,7 +131,7 @@ export async function updateTransaction(id: string, data: {
     projectId: string;
 }) {
     try {
-        const oldTransaction = await prisma.projectExpense.findUnique({ where: { id } });
+        const oldTransaction = await prisma.projectExpense.findFirst({ where: { isDeleted: false,  id } });
 
         const transaction = await prisma.projectExpense.update({
             where: { id },
@@ -149,9 +149,9 @@ export async function updateTransaction(id: string, data: {
         await deleteTransactionByReference(id);
 
         if (data.type === 'Income') {
-            const project = await prisma.project.findUnique({
-                where: { id: data.projectId },
-                select: { customerId: true, name: true }
+            const project = await prisma.project.findFirst({
+                where: { isDeleted: false,  id: data.projectId },
+                select: { customerId: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } }
             });
 
             if (project?.customerId) {
@@ -188,7 +188,7 @@ export async function deleteTransaction(id: string, projectId: string) {
         // This handles the case where a "Team Payment" is deleted from the generic list
         // 1. Find assignments for this project
         const assignments = await prisma.jobAssignment.findMany({
-            where: {
+            where: { isDeleted: false,
                 proposal: { projectId: projectId }
             }
         });

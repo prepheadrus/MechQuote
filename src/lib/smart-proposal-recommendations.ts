@@ -100,7 +100,7 @@ export async function getProductRecommendations(
   let historicalPurchases: Record<string, any> = {};
   if (customerId) {
     const purchases = await prisma.invoiceItem.findMany({
-      where: {
+      where: { isDeleted: false,
         invoice: {
           customerId,
         },
@@ -111,8 +111,8 @@ export async function getProductRecommendations(
         },
       },
       include: {
-        product: true,
-        invoice: true,
+        product: { where: { isDeleted: false } },
+        invoice: { where: { isDeleted: false } },
       },
     });
 
@@ -207,8 +207,8 @@ export async function getSimilarProducts(
   limit: number = 10
 ): Promise<ProductRecommendation[]> {
   // Get the target product
-  const targetProduct = await prisma.product.findUnique({
-    where: { id: productId },
+  const targetProduct = await prisma.product.findFirst({
+    where: { isDeleted: false,  id: productId },
   });
 
   if (!targetProduct) {
