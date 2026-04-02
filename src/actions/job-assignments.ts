@@ -44,9 +44,9 @@ export async function updateJobAssignmentPayment(assignmentId: string, data: {
         const oldAssignment = await prisma.jobAssignment.findFirst({
             where: { id: assignmentId, isDeleted: false },
             include: {
-                personnel: { where: { isDeleted: false } },
+                personnel: true,
                 proposal: { where: { isDeleted: false },
-                    select: { projectId: { where: { isDeleted: false } } }
+                    select: { projectId: true }
                 }
             }
         });
@@ -270,7 +270,7 @@ export async function getJobAssignment(id: string) {
         const assignment = await prisma.jobAssignment.findFirst({
             where: { id, isDeleted: false },
             include: {
-                personnel: { where: { isDeleted: false } },
+                personnel: true,
                 proposal: { where: { isDeleted: false },
                     include: {
                         project: { where: { isDeleted: false } }
@@ -289,7 +289,7 @@ export async function getJobAssignments() {
         const assignments = await prisma.jobAssignment.findMany({
             where: { isDeleted: false },
             include: {
-                personnel: { where: { isDeleted: false } },
+                personnel: true,
                 proposal: { where: { isDeleted: false },
                     include: {
                         project: { where: { isDeleted: false } }
@@ -448,7 +448,7 @@ export async function deleteJobAssignment(id: string) {
         // ✅ isDeleted filtresi kaldırıldı - zaten silinmiş assignment'ları da bulabilmeli
         const assignment = await prisma.jobAssignment.findFirst({
             where: { isDeleted: false,  id },
-            include: { personnel: { where: { isDeleted: false } } }
+            include: { personnel: { } }
         });
 
         if (!assignment) return { success: false, error: "Atama bulunamadı." };

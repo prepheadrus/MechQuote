@@ -31,7 +31,7 @@ export async function findDuplicateProducts(): Promise<{ success: boolean; data?
     try {
         const products = await prisma.product.findMany({ where: { isDeleted: false },
             include: {
-                _count: { where: { isDeleted: false },
+                _count: {
                     select: {
                         invoiceItems: { where: { isDeleted: false } },
                         proposalItems: { where: { isDeleted: false } },
@@ -148,7 +148,7 @@ export async function reconcileCustomerBalances() {
 
         // 1. Get all existing Transaction Reference IDs to avoid duplicates
         const existingTransactions = await prisma.customerTransaction.findMany({ where: { isDeleted: false },
-            select: { referenceId: { where: { isDeleted: false } } }
+            select: { referenceId: true }
         });
         const existingRefs = new Set(existingTransactions.map(t => t.referenceId).filter(Boolean));
         logs.push(`Found ${existingRefs.size} existing transactions.`);

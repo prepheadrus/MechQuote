@@ -112,7 +112,7 @@ export async function getProductRecommendations(
       },
       include: {
         product: { where: { isDeleted: false } },
-        invoice: { where: { isDeleted: false } },
+        invoice: true,
       },
     });
 

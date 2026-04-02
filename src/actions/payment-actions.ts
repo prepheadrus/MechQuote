@@ -17,7 +17,7 @@ export async function createPayment(data: {
         const invoice = await prisma.invoice.findFirst({
             where: { id: data.invoiceId, isDeleted: false },
             include: {
-                customer: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } }
+                customer: { where: { isDeleted: false },  select: { name: true } }
             }
         });
 
@@ -66,7 +66,7 @@ export async function deletePayment(id: string, invoiceId: string, projectId?: s
         const payment = await prisma.payment.findFirst({
             where: { isDeleted: false,  id },
             include: {
-                invoice: { where: { isDeleted: false },  select: { customerId: { where: { isDeleted: false } }, invoiceNumber: { where: { isDeleted: false } }, isDeleted: { where: { isDeleted: false } } } }
+                invoice: { select: { customerId: true, invoiceNumber: true, isDeleted: true } }
             }
         });
 

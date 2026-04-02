@@ -38,7 +38,7 @@ export async function createTemplate(data: {
         if (data.sourceProposalId && data.sourceProposalId !== 'none') {
             const proposal = await prisma.proposal.findFirst({
                 where: { id: data.sourceProposalId, isDeleted: false },
-                include: { items: { where: { isDeleted: false } } }
+                include: { items: true }
             });
 
             if (proposal && proposal.items) {
@@ -141,7 +141,7 @@ export async function createProposalFromTemplate(templateId: string, customerId:
         const lastProposal = await prisma.proposal.findFirst({
             where: { isDeleted: false },
             orderBy: { createdAt: 'desc' },
-            select: { quoteNumber: { where: { isDeleted: false } } }
+            select: { quoteNumber: true }
         });
 
         let nextNumber = 1;
@@ -191,8 +191,8 @@ export async function createProposalFromTemplate(templateId: string, customerId:
                 }
             },
             include: {
-                items: { where: { isDeleted: false } },
-                customer: { where: { isDeleted: false } }
+                items: true,
+                customer: true
             }
         });
 

@@ -167,11 +167,11 @@ export async function getSalaryProcessingStatus(month: number, year: number) {
         }
       },
       include: {
-        personnel: { where: { isDeleted: false },
+        personnel: {
           select: {
-            id: { where: { isDeleted: false } },
-            name: { where: { isDeleted: false } },
-            status: { where: { isDeleted: false } }
+            id: true,
+            name: true,
+            status: true
           }
         }
       }
@@ -227,9 +227,9 @@ export async function getPendingSalaries(
     const activePersonnel = await prisma.personnel.findMany({
       where: { isDeleted: false,  status: 'Aktif' },
       select: {
-        id: { where: { isDeleted: false } },
-        name: { where: { isDeleted: false } },
-        balance: { where: { isDeleted: false } }
+        id: true,
+        name: true,
+        balance: true
       }
     });
 
@@ -242,7 +242,7 @@ export async function getPendingSalaries(
         }
       },
       select: {
-        personnelId: { where: { isDeleted: false } }
+        personnelId: true
       }
     });
 

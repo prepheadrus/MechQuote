@@ -68,12 +68,12 @@ export async function getMasterAnalytics(): Promise<{ success: boolean; data?: M
     try {
         const projects = await prisma.project.findMany({ where: { isDeleted: false },
             include: {
-                customer: { where: { isDeleted: false } },
+                customer: true,
                 linkedProposal: { where: { isDeleted: false },
                     include: {
                         items: { where: { isDeleted: false } },
                         jobAssignments: { where: { isDeleted: false },
-                            include: { personnel: { where: { isDeleted: false } } }
+                            include: { personnel: { } }
                         }
                     }
                 },
@@ -95,7 +95,7 @@ export async function getMasterAnalytics(): Promise<{ success: boolean; data?: M
                 ],
                 isDeleted: false // ✅ Soft delete filtresi
             },
-            include: { invoice: { where: { isDeleted: false } } }
+            include: { invoice: { } }
         });
 
         // 2. Fetch ALL relevant job assignments for ALL projects in one go
@@ -105,8 +105,8 @@ export async function getMasterAnalytics(): Promise<{ success: boolean; data?: M
                 isDeleted: false // ✅ Soft delete filtresi
             },
             include: {
-                personnel: { where: { isDeleted: false } },
-                proposal: { where: { isDeleted: false },  select: { projectId: { where: { isDeleted: false } } } }
+                personnel: true,
+                proposal: { where: { isDeleted: false },  select: { projectId: true } }
             }
         });
 

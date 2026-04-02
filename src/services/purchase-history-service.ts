@@ -293,11 +293,11 @@ export async function getPurchasedProductsBySupplier(supplierName: string) {
                 }
             },
             include: {
-                invoice: { where: { isDeleted: false },
+                invoice: {
                     select: {
-                        invoiceDate: { where: { isDeleted: false } },
-                        invoiceNumber: { where: { isDeleted: false } },
-                        currency: { where: { isDeleted: false } }
+                        invoiceDate: true,
+                        invoiceNumber: true,
+                        currency: true
                     }
                 }
             },
@@ -313,7 +313,7 @@ export async function getPurchasedProductsBySupplier(supplierName: string) {
 
         const products = await prisma.product.findMany({
             where: { isDeleted: false,  id: { in: linkedProductIds } },
-            select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } }, unit: { where: { isDeleted: false } } }
+            select: { id: true, name: true, unit: true }
         });
 
         const productMap = new Map(products.map(p => [p.id, p]));

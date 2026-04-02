@@ -28,13 +28,13 @@ export interface CashEntry {
 export async function getCashBookFormData() {
     try {
         const [customers, projects, personnel, suppliersRes] = await Promise.all([
-            prisma.customer.findMany({ where: { isDeleted: false },  select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } }, orderBy: { name: 'asc' } }),
+            prisma.customer.findMany({ where: { isDeleted: false },  select: { id: true, name: true }, orderBy: { name: 'asc' } }),
             prisma.project.findMany({
                 where: { isDeleted: false,  status: { notIn: ['PROJE_TAMAMLANDI', 'IPTAL_EDILDI', 'FATURALANDIRILDI_VE_KAPANDI'] } },
-                select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } }, customerId: { where: { isDeleted: false } } },
+                select: { id: true, name: true, customerId: true },
                 orderBy: { name: 'asc' }
             }),
-            prisma.personnel.findMany({ where: { isDeleted: false,  status: 'Aktif' }, select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } }, orderBy: { name: 'asc' } }),
+            prisma.personnel.findMany({ where: { isDeleted: false,  status: 'Aktif' }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
             getSuppliers()
         ]);
 
@@ -166,10 +166,10 @@ export const getCashBookEntries = cache(async function getCashBookEntries() {
                     }
                 },
                 include: {
-                    invoice: { where: { isDeleted: false },
+                    invoice: {
                         include: {
-                            customer: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } },
-                            project: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } }
+                            customer: { where: { isDeleted: false },  select: { name: true } },
+                            project: { where: { isDeleted: false },  select: { name: true } }
                         }
                     }
                 }
@@ -179,17 +179,17 @@ export const getCashBookEntries = cache(async function getCashBookEntries() {
                 where: { isDeleted: false }, // ✅ Soft delete filtresi
                 include: {
                     project: {
-                        include: { customer: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } } }
+                        include: { customer: { where: { isDeleted: false },  select: { name: true } } }
                     },
-                    supplier: { select: { name: { where: { isDeleted: false } } } }
+                    supplier: { select: { name: true } }
                 } as any
             }),
             // 3. Personnel Payments from JobAssignments (Read paymentHistory field)
             (prisma as any).jobAssignment.findMany({
                 where: { isDeleted: false },
                 include: {
-                    personnel: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } },
-                    project: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } },
+                    personnel: { where: { isDeleted: false },  select: { name: true } },
+                    project: { where: { isDeleted: false },  select: { name: true } },
                     proposal: { where: { isDeleted: false },  select: { quoteNumber: { where: { isDeleted: false } } } }
                 }
             }),
@@ -201,7 +201,7 @@ export const getCashBookEntries = cache(async function getCashBookEntries() {
                     isDeleted: false
                 },
                 include: {
-                    customer: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } }
+                    customer: { select: { name: true } }
                 }
             }),
             // 5. Manual Supplier Transactions (Payment/Debt)
@@ -211,7 +211,7 @@ export const getCashBookEntries = cache(async function getCashBookEntries() {
                     isDeleted: false
                 },
                 include: {
-                    supplier: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } }
+                    supplier: { where: { isDeleted: false },  select: { name: true } }
                 }
             })
         ]) as [any[], any[], any[], any[], any[]];
@@ -317,7 +317,7 @@ export const getCashBookEntries = cache(async function getCashBookEntries() {
             if (ct.referenceType === 'Invoice' && ct.referenceId) {
                 const invoice = await prisma.invoice.findFirst({
                     where: { isDeleted: false,  id: ct.referenceId },
-                    select: { isDeleted: { where: { isDeleted: false } } }
+                    select: { isDeleted: true }
                 });
                 if (invoice?.isDeleted) {
                     continue; // Skip soft-deleted invoice transactions
@@ -358,7 +358,7 @@ export const getCashBookEntries = cache(async function getCashBookEntries() {
             if (st.referenceType === 'Invoice' && st.referenceId) {
                 const invoice = await prisma.invoice.findFirst({
                     where: { isDeleted: false,  id: st.referenceId },
-                    select: { isDeleted: { where: { isDeleted: false } } }
+                    select: { isDeleted: true }
                 });
                 if (invoice?.isDeleted) {
                     continue; // Skip soft-deleted invoice transactions

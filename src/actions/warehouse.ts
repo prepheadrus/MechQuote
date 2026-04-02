@@ -7,7 +7,7 @@ export async function getWarehouseStock() {
         const products = await prisma.product.findMany({
             where: { isDeleted: false },
             include: {
-                _count: { where: { isDeleted: false },
+                _count: {
                     select: { stockMovements: { where: { isDeleted: false } } }
                 }
             },
@@ -39,7 +39,7 @@ export async function getStockMovements(productId?: string) {
         const movements = await prisma.stockMovement.findMany({
             where,
             include: {
-                product: { where: { isDeleted: false } }
+                product: true
             },
             orderBy: { createdAt: 'desc' },
             take: 50

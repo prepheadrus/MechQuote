@@ -357,7 +357,7 @@ export async function createInvoice(data: {
                     }
                 },
                 include: {
-                    items: { where: { isDeleted: false } }
+                    items: true
                 }
             });
 
@@ -469,7 +469,7 @@ export async function updateInvoice(
             where: { id },
             data: updateData,
             include: {
-                items: { where: { isDeleted: false } }
+                items: true
             }
         });
 
@@ -640,7 +640,7 @@ export async function cancelInvoice(
                 // Get invoice number for description
                 const invoiceForStock = await tx.invoice.findFirst({
                     where: { isDeleted: false,  id },
-                    select: { invoiceNumber: { where: { isDeleted: false } } }
+                    select: { invoiceNumber: true }
                 });
                 
                 const invoiceItems = await tx.invoiceItem.findMany({
@@ -865,7 +865,7 @@ export async function findSuggestedProductId(invoiceItemName: string) {
                 }
             },
             select: {
-                linkedProductId: { where: { isDeleted: false } }
+                linkedProductId: true
             }
         });
 

@@ -32,13 +32,13 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
       take: 20,
       select: {
-        id: { where: { isDeleted: false } },
-        invoiceItemName: { where: { isDeleted: false } },
-        productName: { where: { isDeleted: false } },
-        type: { where: { isDeleted: false } },
-        confidence: { where: { isDeleted: false } },
-        method: { where: { isDeleted: false } },
-        createdAt: { where: { isDeleted: false } },
+        id: true,
+        invoiceItemName: true,
+        productName: true,
+        type: true,
+        confidence: true,
+        method: true,
+        createdAt: true,
       },
     });
 

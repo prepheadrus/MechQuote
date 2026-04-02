@@ -168,19 +168,19 @@ export async function getProductAnalytics() {
             prisma.proposalItem.findMany({
                 where: { isDeleted: false,  proposal: { status: 'Approved' } },
                 select: {
-                    productId: { where: { isDeleted: false } },
-                    quantity: { where: { isDeleted: false } },
-                    profitMargin: { where: { isDeleted: false } },
-                    name: { where: { isDeleted: false } },
-                    brand: { where: { isDeleted: false } },
-                    listPrice: { where: { isDeleted: false } },
-                    basePrice: { where: { isDeleted: false } },
-                    discountRate: { where: { isDeleted: false } },
-                    currency: { where: { isDeleted: false } },
-                    proposal: { where: { isDeleted: false },
+                    productId: true,
+                    quantity: true,
+                    profitMargin: true,
+                    name: true,
+                    brand: true,
+                    listPrice: true,
+                    basePrice: true,
+                    discountRate: true,
+                    currency: true,
+                    proposal: {
                         select: {
-                            exchangeRateUSD: { where: { isDeleted: false } },
-                            exchangeRateEUR: { where: { isDeleted: false } }
+                            exchangeRateUSD: true,
+                            exchangeRateEUR: true
                         }
                     }
                 }
@@ -192,9 +192,9 @@ export async function getProductAnalytics() {
                     linkedProductId: { not: null }
                 },
                 select: {
-                    linkedProductId: { where: { isDeleted: false } },
-                    quantity: { where: { isDeleted: false } },
-                    name: { where: { isDeleted: false } }
+                    linkedProductId: true,
+                    quantity: true,
+                    name: true
                 }
             })
         ]);
@@ -269,7 +269,7 @@ export async function getProductList() {
 export async function getUniqueCategories() {
     try {
         const categories = await prisma.product.findMany({
-            select: { category: { where: { isDeleted: false } } },
+            select: { category: true },
             distinct: ['category'],
             where: { 
                 isDeleted: false,
@@ -279,7 +279,7 @@ export async function getUniqueCategories() {
 
         // Also include InstallationType names as they are often used as categories
         const installationTypes = await prisma.installationType.findMany({
-            select: { name: { where: { isDeleted: false } } },
+            select: { name: true },
             where: { isDeleted: false }
         });
 
@@ -360,15 +360,15 @@ export async function getProductDetails(id: string) {
                     isDeleted: false // ✅ Soft delete filtresi
                 },
                 select: {
-                    quantity: { where: { isDeleted: false } },
-                    profitMargin: { where: { isDeleted: false } },
-                    basePrice: { where: { isDeleted: false } },
-                    listPrice: { where: { isDeleted: false } },
-                    currency: { where: { isDeleted: false } },
-                    proposal: { where: { isDeleted: false },
+                    quantity: true,
+                    profitMargin: true,
+                    basePrice: true,
+                    listPrice: true,
+                    currency: true,
+                    proposal: {
                         select: {
-                            exchangeRateUSD: { where: { isDeleted: false } },
-                            exchangeRateEUR: { where: { isDeleted: false } }
+                            exchangeRateUSD: true,
+                            exchangeRateEUR: true
                         }
                     }
                 }
@@ -429,12 +429,12 @@ export async function getLatestPurchaseInfo(productId: string) {
             where: { isDeleted: false,  productId },
             orderBy: { date: 'desc' },
             include: {
-                product: { where: { isDeleted: false },
+                product: {
                     select: {
-                        name: { where: { isDeleted: false } },
-                        brand: { where: { isDeleted: false } },
-                        model: { where: { isDeleted: false } },
-                        unit: { where: { isDeleted: false } }
+                        name: true,
+                        brand: true,
+                        model: true,
+                        unit: true
                     }
                 }
             }
@@ -460,11 +460,11 @@ export async function getLatestProductPrice(id: string) {
         const product = await prisma.product.findFirst({
             where: { id, isDeleted: false },
             select: {
-                listPrice: { where: { isDeleted: false } },
-                discountRate: { where: { isDeleted: false } },
-                currency: { where: { isDeleted: false } },
-                vatRate: { where: { isDeleted: false } },
-                priceIncludesVat: { where: { isDeleted: false } }
+                listPrice: true,
+                discountRate: true,
+                currency: true,
+                vatRate: true,
+                priceIncludesVat: true
             }
         });
 
@@ -793,9 +793,9 @@ export async function findDuplicateProducts() {
         const products = await prisma.product.findMany({
             where: { isDeleted: false },
             include: {
-                _count: { where: { isDeleted: false },
+                _count: {
                     select: {
-                        purchaseHistory: { where: { isDeleted: false } }
+                        purchaseHistory: true
                     }
                 }
             },

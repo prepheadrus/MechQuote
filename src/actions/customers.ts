@@ -77,22 +77,22 @@ export async function getCustomerStats() {
                 proposals: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     select: {
-                        id: { where: { isDeleted: false } },
-                        totalAmount: { where: { isDeleted: false } },
-                        createdAt: { where: { isDeleted: false } },
-                        status: { where: { isDeleted: false } },
+                        id: true,
+                        totalAmount: true,
+                        createdAt: true,
+                        status: true,
                         linkedInProjects: {
                             where: { isDeleted: false }, // ✅ Nested filtre
-                            select: { id: { where: { isDeleted: false } } }
+                            select: { id: true }
                         }
                     }
                 },
                 projects: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     select: {
-                        contractAmount: { where: { isDeleted: false } },
-                        status: { where: { isDeleted: false } },
-                        createdAt: { where: { isDeleted: false } }
+                        contractAmount: true,
+                        status: true,
+                        createdAt: true
                     }
                 }
             },

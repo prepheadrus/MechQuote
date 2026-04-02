@@ -76,7 +76,7 @@ async function checkDuplicateProject(tx: any, name: string, customerId: string) 
 async function calculateProjectCostsFromProposal(tx: any, proposalId: string) {
     const proposal = await tx.proposal.findFirst({
         where: { id: proposalId, isDeleted: false },
-        include: { items: { where: { isDeleted: false } }, jobAssignments: { where: { isDeleted: false } } }
+        include: { items: { where: { isDeleted: false } }, jobAssignments: true }
     });
 
     if (!proposal) return { proposal: null, materialCost: 0, laborCost: 0 };
@@ -88,7 +88,7 @@ async function calculateProjectCostsFromProposal(tx: any, proposalId: string) {
 
     const products = await tx.product.findMany({
         where: { id: { in: productIds }, isDeleted: false },
-        select: { id: { where: { isDeleted: false } }, category: { where: { isDeleted: false } } }
+        select: { id: true, category: true }
     });
     const productCategoryMap = new Map(products.map((p: any) => [p.id, p.category]));
 
@@ -133,7 +133,7 @@ async function handleProposalConversion(tx: any, proposal: any, project: any, co
             if (item.productId) {
                 const productExists = await tx.product.findFirst({
                     where: { id: item.productId, isDeleted: false },
-                    select: { id: { where: { isDeleted: false } } }
+                    select: { id: true }
                 });
 
                 if (productExists) {
@@ -370,12 +370,12 @@ export async function getProjects(filters?: { status?: ProjeDurumu | 'All' | str
         const projects = await prisma.project.findMany({
             where,
             include: {
-                customer: { where: { isDeleted: false } },
+                customer: true,
                 proposals: { where: { isDeleted: false },
-                    select: { id: { where: { isDeleted: false } }, quoteNumber: { where: { isDeleted: false } }, createdAt: { where: { isDeleted: false } } },
+                    select: { id: true, quoteNumber: true, createdAt: true },
                     take: 1
                 },
-                _count: { where: { isDeleted: false },
+                _count: {
                     select: { invoices: { where: { isDeleted: false } }, proposals: { where: { isDeleted: false } } }
                 }
             },
@@ -385,7 +385,7 @@ export async function getProjects(filters?: { status?: ProjeDurumu | 'All' | str
         // Also fetch totals for the header cards, unfiltered
         const allProjects = await prisma.project.findMany({
             where: { isDeleted: false },
-            select: { status: { where: { isDeleted: false } }, contractAmount: { where: { isDeleted: false } } }
+            select: { status: true, contractAmount: true }
         });
 
         return { success: true, data: { projects, allProjects } };
@@ -403,7 +403,7 @@ export async function getProject(id: string) {
         const project = await prisma.project.findFirst({
             where: { id, isDeleted: false },
             include: {
-                customer: { where: { isDeleted: false } },
+                customer: true,
                 invoices: { where: { isDeleted: false },
                     orderBy: { invoiceDate: 'desc' }
                 },
@@ -413,7 +413,7 @@ export async function getProject(id: string) {
                         jobAssignments: {
                             where: { isDeleted: false }, // ✅ Soft delete filtresi
                             include: {
-                                personnel: { where: { isDeleted: false } }
+                                personnel: true
                             }
                         }
                     }
@@ -422,7 +422,7 @@ export async function getProject(id: string) {
                     orderBy: { date: 'desc' }
                 },
                 // ✅ YENİ: Müşteri ödemelerini de dahil et (Kasa Defteri için)
-                customer: { where: { isDeleted: false },
+                customer: {
                     include: {
                         transactions: {
                             where: {
@@ -437,7 +437,7 @@ export async function getProject(id: string) {
                 jobAssignments: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     include: {
-                        personnel: { where: { isDeleted: false } }
+                        personnel: true
                     }
                 },
                 statusHistory: { where: { isDeleted: false },
@@ -460,18 +460,18 @@ export async function getProject(id: string) {
                 ]
             },
             include: {
-                invoice: { where: { isDeleted: false },
+                invoice: {
                     select: {
-                        id: { where: { isDeleted: false } },
-                        type: { where: { isDeleted: false } },
-                        status: { where: { isDeleted: false } },
-                        currency: { where: { isDeleted: false } },
-                        invoiceNumber: { where: { isDeleted: false } },
-                        invoiceDate: { where: { isDeleted: false } },
-                        senderName: { where: { isDeleted: false } },
-                        receiverName: { where: { isDeleted: false } },
+                        id: true,
+                        type: true,
+                        status: true,
+                        currency: true,
+                        invoiceNumber: true,
+                        invoiceDate: true,
+                        senderName: true,
+                        receiverName: true,
                         customer: { where: { isDeleted: false },
-                            select: { name: { where: { isDeleted: false } } }
+                            select: { name: true }
                         }
                     }
                 }
@@ -814,7 +814,7 @@ export async function updateProject(id: string, data: {
         // 1. Fetch current project to check for Contract Amount change or Status change
         const currentProject = await prisma.project.findFirst({
             where: { id, isDeleted: false },
-            select: { contractAmount: { where: { isDeleted: false } }, customerId: { where: { isDeleted: false } }, linkedProposalId: { where: { isDeleted: false } }, status: { where: { isDeleted: false } } }
+            select: { contractAmount: true, customerId: true, linkedProposalId: true, status: true }
         });
 
         const project = await prisma.project.update({
@@ -989,7 +989,7 @@ export async function deleteProjectInternal(id: string, tx: any) {
     // 2. Financial Cleanup: Revert Project Collections/Incomes of Project Expenses
     const pTransactions = await tx.projectExpense.findMany({
         where: { isDeleted: false,  projectId: id },
-        select: { id: { where: { isDeleted: false } } }
+        select: { id: true }
     });
 
     const pTxIds = pTransactions.map((t: any) => t.id);
@@ -1014,7 +1014,7 @@ export async function deleteProjectInternal(id: string, tx: any) {
 
     const linkedProposals = await tx.proposal.findMany({ 
         where: { projectId: id, isDeleted: false }, 
-        select: { id: { where: { isDeleted: false } } }
+        select: { id: true }
     });
 
     // Financial Cleanup for Linked Proposals
@@ -1103,7 +1103,7 @@ export async function deleteProject(id: string) {
             // Get IDs of all project expenses/transactions to be deleted
             const pTransactions = await tx.projectExpense.findMany({
                 where: { isDeleted: false,  projectId: id },
-                select: { id: { where: { isDeleted: false } } }
+                select: { id: true }
             });
 
             const pTxIds = pTransactions.map(t => t.id);
@@ -1128,7 +1128,7 @@ export async function deleteProject(id: string) {
 
             const linkedProposals = await tx.proposal.findMany({ 
                 where: { projectId: id, isDeleted: false }, 
-                select: { id: { where: { isDeleted: false } } }
+                select: { id: true }
             });
 
             // NEW: Financial Cleanup for Linked Proposals
@@ -1197,7 +1197,7 @@ export async function getProjectsByCustomer(customerId: string) {
         const projects = await prisma.project.findMany({
             where: { isDeleted: false,  customerId },
             orderBy: { createdAt: 'desc' },
-            include: { _count: { where: { isDeleted: false },  select: { invoices: { where: { isDeleted: false } }, proposals: { where: { isDeleted: false } } } } }
+            include: { _count: { select: { invoices: { }, proposals: { } } } }
         });
         return { success: true, data: projects };
     } catch (error) {
@@ -1210,8 +1210,8 @@ export async function getAllProjects() {
         const projects = await prisma.project.findMany({ where: { isDeleted: false },
             orderBy: { createdAt: 'desc' },
             include: {
-                customer: { where: { isDeleted: false },  select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } } },
-                _count: { where: { isDeleted: false },  select: { invoices: { where: { isDeleted: false } }, proposals: { where: { isDeleted: false } } } }
+                customer: { select: { id: true, name: true } },
+                _count: { select: { invoices: { }, proposals: { } } }
             }
         });
         return { success: true, data: projects };
@@ -1227,7 +1227,7 @@ export async function getProjectsForSelect(customerId?: string) {
 
         const projects = await prisma.project.findMany({
             where,
-            select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } }, customer: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } } },
+            select: { id: true, name: true, customer: { select: { name: true } } },
             orderBy: { updatedAt: 'desc' }
         });
 
@@ -1329,7 +1329,7 @@ export async function getProjectTeam(projectId: string) {
             include: {
                 jobAssignments: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
-                    include: { personnel: { where: { isDeleted: false } } }
+                    include: { personnel: { } }
                 }
             }
         });
@@ -1369,7 +1369,7 @@ export async function getProjectTeam(projectId: string) {
                 projectId: projectId,
                 isDeleted: false // ✅ Soft delete filtresi
             },
-            include: { personnel: { where: { isDeleted: false } } }
+            include: { personnel: { } }
         });
 
         for (const assignment of directAssignments) {
