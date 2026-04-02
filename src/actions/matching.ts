@@ -346,10 +346,8 @@ export async function matchProduct(name: string, supplierId?: string | null) {
     if (supplierId) {
         const supplierAlias = await prisma.productAlias.findFirst({
             where: { isDeleted: false,
-                supplierId_aliasName: {
-                    supplierId: supplierId,
-                    aliasName: normalizedName
-                }
+                supplierId: supplierId,
+                aliasName: normalizedName
             },
             include: { product: { } }
         });
