@@ -898,40 +898,42 @@ export async function updateProject(id: string, data: {
             const currentMemberIds = currentAssignments.map(a => a.personnelId);
             const newMemberIds = teamMemberDetails.map(p => p.id);
 
-            // 1. Remove members no longer in the list
+            // 1. Remove members no longer in the list (Soft-delete)
             const membersToRemove = currentMemberIds.filter(id => !newMemberIds.includes(id));
             if (membersToRemove.length > 0) {
-                await prisma.jobAssignment.deleteMany({
+                await prisma.jobAssignment.updateMany({
                     where: {
                         proposalId: targetProposalId,
                         personnelId: { in: membersToRemove }
+                    },
+                    data: {
+                        isDeleted: true,
+                        deletedAt: new Date()
                     }
                 });
             }
 
-            // 2. Add or Update members
-            for (const person of teamMemberDetails) {
-                await prisma.personnel.upsert({
-                    where: { id: person.id },
-                    update: { name: person.name, role: person.role || '', email: person.email },
-                    create: { id: person.id, name: person.name, role: person.role || '', status: 'Aktif', email: person.email }
-                });
-
-                if (!currentMemberIds.includes(person.id)) {
-                    const assignment = await prisma.jobAssignment.create({
-                        data: {
-                            proposalId: targetProposalId,
-                            projectId: id,
-                            personnelId: person.id,
-                            assignedAmount: (teamMemberDetails.length === 1 ? (projectData.estimatedLaborCost || 0) : 0)
-                        }
-                    });
-                } else {
-                    await prisma.personnel.update({
+            // 2. Add or Update members (Optimized to prevent N+1)
+            await prisma.$transaction(
+                teamMemberDetails.map(person =>
+                    prisma.personnel.upsert({
                         where: { id: person.id },
-                        data: { name: person.name, role: person.role || '', email: person.email }
-                    }).catch(() => { });
-                }
+                        update: { name: person.name, role: person.role || '', email: person.email },
+                        create: { id: person.id, name: person.name, role: person.role || '', status: 'Aktif', email: person.email }
+                    })
+                )
+            );
+
+            const newMembers = teamMemberDetails.filter(person => !currentMemberIds.includes(person.id));
+            if (newMembers.length > 0) {
+                await prisma.jobAssignment.createMany({
+                    data: newMembers.map(person => ({
+                        proposalId: targetProposalId,
+                        projectId: id,
+                        personnelId: person.id,
+                        assignedAmount: (teamMemberDetails.length === 1 ? (projectData.estimatedLaborCost || 0) : 0)
+                    }))
+                });
             }
 
             // 3. Distribution of Estimated Labor Cost (Optional / Suggestion)

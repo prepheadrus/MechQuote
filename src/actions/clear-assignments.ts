@@ -6,8 +6,9 @@ import { logger } from '@/lib/logger';
 
 export async function clearProposalAssignments(proposalId: string) {
     try {
-        await prisma.jobAssignment.deleteMany({
-            where: { proposalId: proposalId }
+        await prisma.jobAssignment.updateMany({
+            where: { proposalId: proposalId },
+            data: { isDeleted: true, deletedAt: new Date() }
         });
         revalidatePath('/quotes');
         return { success: true };

@@ -79,129 +79,167 @@ export async function updateJobAssignmentPayment(assignmentId: string, data: {
             }
         });
 
-        // 5. Create ProjectExpense records for new payments
-        for (const payment of newPayments) {
-            // ✅ DUPlikasyon KONTROLÜ: Aynı expense zaten var mı?
-            const existingExpense = await prisma.projectExpense.findUnique({
-                where: { id: payment.id }
+        // 5. Create ProjectExpense records for new payments (Optimized for N+1)
+        if (newPayments.length > 0) {
+            const paymentIds = newPayments.map((p: any) => p.id);
+            const existingExpenses = await prisma.projectExpense.findMany({
+                where: { id: { in: paymentIds } }
             });
+            const existingIds = new Set(existingExpenses.map(e => e.id));
 
-            if (!existingExpense) {
-                // Sadece yoksa oluştur
-                await prisma.projectExpense.create({
-                    data: {
-                        id: payment.id, // Use the same ID for linking
-                        description: `Ekip Ödemesi: ${oldAssignment.personnel.name}${payment.note ? ` (${payment.note})` : ''}`,
-                        amount: payment.amount,
-                        date: new Date(payment.date),
-                        category: 'Personel Ödemesi',
-                        type: 'Expense',
-                        projectId: projectId
-                    }
+            const expensesToCreate = newPayments
+                .filter((p: any) => !existingIds.has(p.id))
+                .map((p: any) => ({
+                    id: p.id,
+                    description: `Ekip Ödemesi: ${oldAssignment.personnel.name}${p.note ? ` (${p.note})` : ''}`,
+                    amount: p.amount,
+                    date: new Date(p.date),
+                    category: 'Personel Ödemesi',
+                    type: 'Expense',
+                    projectId: projectId
+                }));
+
+            if (expensesToCreate.length > 0) {
+                await prisma.projectExpense.createMany({
+                    data: expensesToCreate
                 });
-            } else {
-                logger.warn(`ProjectExpense ${payment.id} zaten var, atlanıyor.`);
             }
+
+            newPayments
+                .filter((p: any) => existingIds.has(p.id))
+                .forEach((p: any) => logger.warn(`ProjectExpense ${p.id} zaten var, atlanıyor.`));
         }
         
-        // 6. ✅ YENİ: Handle UPDATED ProjectExpenses
-        for (const payment of updatedPayments) {
-            const existingExpense = await prisma.projectExpense.findUnique({
-                where: { id: payment.id }
+        // 6. ✅ YENİ: Handle UPDATED ProjectExpenses (Optimized for N+1)
+        if (updatedPayments.length > 0) {
+            const updateIds = updatedPayments.map((p: any) => p.id);
+            const existingToUpdate = await prisma.projectExpense.findMany({
+                where: { id: { in: updateIds } }
             });
             
-            if (existingExpense) {
-                // Update the expense
-                await prisma.projectExpense.update({
-                    where: { id: payment.id },
-                    data: {
-                        amount: payment.amount,
-                        description: `Ekip Ödemesi: ${oldAssignment.personnel.name}${payment.note ? ` (${payment.note})` : ''}`,
-                        date: new Date(payment.date)
-                    }
-                });
-                
-                logger.info(`ProjectExpense ${payment.id} güncellendi: ₺${existingExpense.amount} → ₺${payment.amount}`);
-            }
-        }
+            const existingMap = new Map(existingToUpdate.map(e => [e.id, e]));
 
-        // 7. Update Personnel Transaction for each new payment
-        for (const payment of newPayments) {
-            // ✅ DUPlikasyon KONTROLÜ: Aynı transaction zaten var mı?
-            const existingTx = await extendedPrisma.personnelTransaction.findUnique({
-                where: { id: payment.id }
-            });
-
-            if (!existingTx) {
-                // Sadece yoksa oluştur
-                await extendedPrisma.personnelTransaction.create({
-                    data: {
-                        id: payment.id,
-                        personnelId: oldAssignment.personnelId,
-                        amount: payment.amount,
-                        type: 'Payment',
-                        category: 'Avans',
-                        description: `${oldAssignment.personnel.name} - ${oldAssignment.proposal?.projectId ? 'Proje' : 'Teklif'} Ödemesi: ${payment.note || ''}`,
-                        date: new Date(payment.date),
-                        projectId: projectId,
-                        referenceId: assignmentId
-                    }
-                });
-
-                // Update Personnel Balance (Positive means they owe us)
-                await prisma.personnel.update({
-                    where: { id: oldAssignment.personnelId },
-                    data: { balance: { increment: payment.amount } }
-                });
-            } else {
-                logger.warn(`PersonnelTransaction ${payment.id} zaten var, atlanıyor.`);
-            }
-        }
-        
-        // 8. ✅ YENİ: Handle UPDATED payments (same ID, different amount)
-        for (const payment of updatedPayments) {
-            const existingTx = await prisma.personnelTransaction.findUnique({
-                where: { id: payment.id }
-            });
-            
-            if (existingTx) {
-                const oldAmount = existingTx.amount;
-                const newAmount = payment.amount;
-                const balanceDiff = newAmount - oldAmount;
-                
-                // Update the transaction
-                await prisma.personnelTransaction.update({
-                    where: { id: payment.id },
-                    data: {
-                        amount: newAmount,
-                        description: `${oldAssignment.personnel.name} - ${oldAssignment.proposal?.projectId ? 'Proje' : 'Teklif'} Ödemesi: ${payment.note || ''}`,
-                        date: new Date(payment.date)
-                    }
-                });
-                
-                // Adjust balance: remove old amount, add new amount
-                await prisma.personnel.update({
-                    where: { id: oldAssignment.personnelId },
-                    data: { balance: { increment: balanceDiff } }
-                });
-                
-                logger.info(`PersonnelTransaction ${payment.id} güncellendi: ₺${oldAmount} → ₺${newAmount} (Fark: ₺${balanceDiff})`);
-            }
-        }
-
-        // 9. Handle removed payments in Personnel Transactions
-        for (const payment of removedPayments) {
-            try {
-                const tx = await prisma.personnelTransaction.findUnique({ where: { id: payment.id } });
-                if (tx) {
-                    await prisma.personnel.update({
-                        where: { id: tx.personnelId },
-                        data: { balance: { decrement: tx.amount } }
+            const updateOperations = updatedPayments
+                .filter((p: any) => existingMap.has(p.id))
+                .map((p: any) => {
+                    const existing = existingMap.get(p.id)!;
+                    logger.info(`ProjectExpense ${p.id} güncellenecek: ₺${existing.amount} → ₺${p.amount}`);
+                    return prisma.projectExpense.update({
+                        where: { id: p.id },
+                        data: {
+                            amount: p.amount,
+                            description: `Ekip Ödemesi: ${oldAssignment.personnel.name}${p.note ? ` (${p.note})` : ''}`,
+                            date: new Date(p.date)
+                        }
                     });
-                    await prisma.personnelTransaction.delete({ where: { id: payment.id } });
+                });
+
+            if (updateOperations.length > 0) {
+                await prisma.$transaction(updateOperations);
+            }
+        }
+
+        // 7. Update Personnel Transaction for each new payment (Optimized for N+1)
+        if (newPayments.length > 0) {
+            const paymentIds = newPayments.map((p: any) => p.id);
+            const existingTxs = await prisma.personnelTransaction.findMany({
+                where: { id: { in: paymentIds } }
+            });
+            const existingIds = new Set(existingTxs.map(e => e.id));
+
+            const txsToCreate = newPayments
+                .filter((p: any) => !existingIds.has(p.id))
+                .map((p: any) => ({
+                    id: p.id,
+                    personnelId: oldAssignment.personnelId,
+                    amount: p.amount,
+                    type: 'Payment',
+                    category: 'Avans',
+                    description: `${oldAssignment.personnel.name} - ${oldAssignment.proposal?.projectId ? 'Proje' : 'Teklif'} Ödemesi: ${p.note || ''}`,
+                    date: new Date(p.date),
+                    projectId: projectId,
+                    referenceId: assignmentId
+                }));
+
+            if (txsToCreate.length > 0) {
+                await prisma.$transaction(txsToCreate.map((data: any) => extendedPrisma.personnelTransaction.create({ data })));
+
+                const totalIncrement = txsToCreate.reduce((sum: number, tx: any) => sum + tx.amount, 0);
+                if (totalIncrement > 0) {
+                    await prisma.personnel.update({
+                        where: { id: oldAssignment.personnelId },
+                        data: { balance: { increment: totalIncrement } }
+                    });
                 }
-            } catch (err) {
-                logger.warn(`Could not delete PersonnelTransaction for payment ${payment.id}`);
+            }
+
+            newPayments
+                .filter((p: any) => existingIds.has(p.id))
+                .forEach((p: any) => logger.warn(`PersonnelTransaction ${p.id} zaten var, atlanıyor.`));
+        }
+        
+        // 8. ✅ YENİ: Handle UPDATED payments (same ID, different amount) (Optimized for N+1)
+        if (updatedPayments.length > 0) {
+            const updateIds = updatedPayments.map((p: any) => p.id);
+            const existingToUpdate = await prisma.personnelTransaction.findMany({
+                where: { id: { in: updateIds } }
+            });
+            
+            const existingMap = new Map(existingToUpdate.map(e => [e.id, e]));
+            let totalBalanceDiff = 0;
+
+            const updateOperations = updatedPayments
+                .filter((p: any) => existingMap.has(p.id))
+                .map((p: any) => {
+                    const existing = existingMap.get(p.id)!;
+                    const balanceDiff = p.amount - existing.amount;
+                    totalBalanceDiff += balanceDiff;
+
+                    logger.info(`PersonnelTransaction ${p.id} güncellenecek: ₺${existing.amount} → ₺${p.amount} (Fark: ₺${balanceDiff})`);
+
+                    return prisma.personnelTransaction.update({
+                        where: { id: p.id },
+                        data: {
+                            amount: p.amount,
+                            description: `${oldAssignment.personnel.name} - ${oldAssignment.proposal?.projectId ? 'Proje' : 'Teklif'} Ödemesi: ${p.note || ''}`,
+                            date: new Date(p.date)
+                        }
+                    });
+                });
+
+            if (updateOperations.length > 0) {
+                await prisma.$transaction(updateOperations);
+
+                if (totalBalanceDiff !== 0) {
+                    await prisma.personnel.update({
+                        where: { id: oldAssignment.personnelId },
+                        data: { balance: { increment: totalBalanceDiff } }
+                    });
+                }
+            }
+        }
+
+        // 9. Handle removed payments in Personnel Transactions (Optimized for N+1)
+        if (removedPayments.length > 0) {
+            const removeIds = removedPayments.map((p: any) => p.id);
+            const txsToRemove = await prisma.personnelTransaction.findMany({
+                where: { id: { in: removeIds } }
+            });
+
+            if (txsToRemove.length > 0) {
+                let totalDecrement = 0;
+                txsToRemove.forEach(tx => totalDecrement += tx.amount);
+
+                await prisma.$transaction([
+                    prisma.personnelTransaction.updateMany({
+                        where: { id: { in: txsToRemove.map(t => t.id) } },
+                        data: { isDeleted: true, deletedAt: new Date() }
+                    }),
+                    prisma.personnel.update({
+                        where: { id: oldAssignment.personnelId },
+                        data: { balance: { decrement: totalDecrement } }
+                    })
+                ]);
             }
         }
 
