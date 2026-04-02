@@ -291,13 +291,14 @@ export async function updateDraftMetadata(
  */
 export async function cleanupExpiredDrafts() {
     try {
-        const result = await prisma.draftProposal.deleteMany({
+        const result = await prisma.draftProposal.updateMany({
             where: {
                 OR: [
                     { expiresAt: { lt: new Date() } },
                     { isDeleted: true }
                 ]
-            }
+            },
+            data: { isDeleted: true, deletedAt: new Date() }
         });
 
         console.log(`[DraftProposal] Cleaned up ${result.count} expired drafts`);

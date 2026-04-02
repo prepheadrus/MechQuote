@@ -193,7 +193,8 @@ export async function deleteTransaction(id: string, projectId: string) {
             }
         });
 
-        // 2. Iterate and check/update
+        // 2. Iterate and check/update (Optimized to prevent N+1)
+        const updates: any[] = [];
         for (const assignment of assignments) {
             if (assignment.paymentHistory) {
                 try {
@@ -201,11 +202,10 @@ export async function deleteTransaction(id: string, projectId: string) {
                     const filtered = history.filter((p: any) => p.id !== id);
 
                     if (filtered.length !== history.length) {
-                        // It was in this assignment! Update it.
-                        await prisma.jobAssignment.update({
+                        updates.push(prisma.jobAssignment.update({
                             where: { id: assignment.id },
                             data: { paymentHistory: filtered }
-                        });
+                        }));
                     }
                 } catch (e) {
                     // Ignore parsing errors
@@ -213,8 +213,13 @@ export async function deleteTransaction(id: string, projectId: string) {
             }
         }
 
-        await prisma.projectExpense.delete({
-            where: { id }
+        if (updates.length > 0) {
+            await prisma.$transaction(updates);
+        }
+
+        await prisma.projectExpense.update({
+            where: { id },
+            data: { isDeleted: true, deletedAt: new Date() }
         });
 
         revalidatePath(`/projects/${projectId}`);
