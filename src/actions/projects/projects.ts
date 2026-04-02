@@ -403,7 +403,6 @@ export async function getProject(id: string) {
         const project = await prisma.project.findFirst({
             where: { id, isDeleted: false },
             include: {
-                customer: true,
                 invoices: { where: { isDeleted: false },
                     orderBy: { invoiceDate: 'desc' }
                 },
