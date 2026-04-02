@@ -29,13 +29,13 @@ export interface DuplicateGroup {
  */
 export async function findDuplicateProducts(): Promise<{ success: boolean; data?: DuplicateGroup[]; error?: string }> {
     try {
-        const products = await prisma.product.findMany({
+        const products = await prisma.product.findMany({ where: { isDeleted: false },
             include: {
-                _count: {
+                _count: { where: { isDeleted: false },
                     select: {
-                        invoiceItems: true,
-                        proposalItems: true,
-                        purchaseHistory: true
+                        invoiceItems: { where: { isDeleted: false } },
+                        proposalItems: { where: { isDeleted: false } },
+                        purchaseHistory: { where: { isDeleted: false } }
                     }
                 }
             }
@@ -116,9 +116,10 @@ export async function mergeProducts(masterId: string, duplicateIds: string[]) {
             // For now, let's just delete duplicate recipes to clean up.
 
             // 5. Delete Duplicates
-            await tx.product.deleteMany({
-                where: { id: { in: duplicateIds } }
-            });
+            await tx.product.updateMany({
+    where: { id: { in: duplicateIds } },
+    data: { isDeleted: true, deletedAt: new Date() }
+});
         });
 
         revalidatePath('/products');
@@ -146,15 +147,15 @@ export async function reconcileCustomerBalances() {
         logs.push('Reconciliation started.');
 
         // 1. Get all existing Transaction Reference IDs to avoid duplicates
-        const existingTransactions = await prisma.customerTransaction.findMany({
-            select: { referenceId: true }
+        const existingTransactions = await prisma.customerTransaction.findMany({ where: { isDeleted: false },
+            select: { referenceId: { where: { isDeleted: false } } }
         });
         const existingRefs = new Set(existingTransactions.map(t => t.referenceId).filter(Boolean));
         logs.push(`Found ${existingRefs.size} existing transactions.`);
 
         // 2. Scan Invoices - CORRECTED: Different types for different invoice types
         const invoices = await prisma.invoice.findMany({
-            where: {
+            where: { isDeleted: false,
                 // status: { not: 'Draft' } // REMOVED FILTER to include Drafts
             }
         });
@@ -182,7 +183,7 @@ export async function reconcileCustomerBalances() {
 
         // 3. Scan Proposals (Approved = Debt)
         const proposals = await prisma.proposal.findMany({
-            where: { status: 'Approved' }
+            where: { isDeleted: false,  status: 'Approved' }
         });
 
         let newProposalTxCount = 0;
@@ -204,9 +205,9 @@ export async function reconcileCustomerBalances() {
         logs.push(`Created ${newProposalTxCount} missing transactions from Proposals.`);
 
         // 4. Recalculate Totals for ALL Customers
-        const customers = await prisma.customer.findMany({
+        const customers = await prisma.customer.findMany({ where: { isDeleted: false },
             include: {
-                transactions: true
+                transactions: { where: { isDeleted: false } }
             }
         });
 
@@ -256,12 +257,12 @@ export async function fullReconcileCustomerBalances() {
             logs.push('All customer balances reset to 0.');
 
             // 2. Delete all existing transactions
-            const deletedTxs = await tx.customerTransaction.deleteMany({});
+            const deletedTxs = await tx.customerTransaction.updateMany({ data: { isDeleted: true, deletedAt: new Date() } });
             logs.push(`Deleted ${deletedTxs.count} existing transactions.`);
 
             // 3. Recreate transactions from ALL invoices (CORRECTED: Different types)
-            const invoices = await tx.invoice.findMany({
-                include: { customer: true }
+            const invoices = await tx.invoice.findMany({ where: { isDeleted: false },
+                include: { customer: { where: { isDeleted: false } } }
             });
 
             let invoiceTxCount = 0;
@@ -299,7 +300,7 @@ export async function fullReconcileCustomerBalances() {
 
             // 4. Recreate transactions from Approved proposals
             const proposals = await tx.proposal.findMany({
-                where: { status: 'Approved' }
+                where: { isDeleted: false,  status: 'Approved' }
             });
 
             let proposalTxCount = 0;

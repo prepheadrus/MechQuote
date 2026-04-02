@@ -21,7 +21,7 @@ export async function getPurchasingInsights(productId: string): Promise<{ succes
     try {
         // 1. Fetch Purchase History
         const history = await prisma.purchaseHistory.findMany({
-            where: { productId },
+            where: { isDeleted: false,  productId },
             orderBy: { date: 'desc' },
             take: 20
         });
@@ -72,7 +72,7 @@ export async function getPurchasingInsights(productId: string): Promise<{ succes
                 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
                 const dataSummary = JSON.stringify({
-                    productName: (await prisma.product.findUnique({ where: { id: productId } }))?.name,
+                    productName: (await prisma.product.findFirst({ where: { isDeleted: false,  id: productId } }))?.name,
                     history: history.map(h => ({
                         date: h.date,
                         supplier: h.supplierName,

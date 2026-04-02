@@ -16,29 +16,29 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action');
 
     // Get all stats
-    const totalFeedback = await prisma.feedback.count();
+    const totalFeedback = await prisma.feedback.count({ where: { isDeleted: false } });
     const approvedCount = await prisma.feedback.count({
-      where: { type: 'approved' },
+      where: { isDeleted: false,  type: 'approved' },
     });
     const correctedCount = await prisma.feedback.count({
-      where: { type: 'corrected' },
+      where: { isDeleted: false,  type: 'corrected' },
     });
     const rejectedCount = await prisma.feedback.count({
-      where: { type: 'rejected' },
+      where: { isDeleted: false,  type: 'rejected' },
     });
 
     // Get recent feedback
-    const recentFeedback = await prisma.feedback.findMany({
+    const recentFeedback = await prisma.feedback.findMany({ where: { isDeleted: false },
       orderBy: { createdAt: 'desc' },
       take: 20,
       select: {
-        id: true,
-        invoiceItemName: true,
-        productName: true,
-        type: true,
-        confidence: true,
-        method: true,
-        createdAt: true,
+        id: { where: { isDeleted: false } },
+        invoiceItemName: { where: { isDeleted: false } },
+        productName: { where: { isDeleted: false } },
+        type: { where: { isDeleted: false } },
+        confidence: { where: { isDeleted: false } },
+        method: { where: { isDeleted: false } },
+        createdAt: { where: { isDeleted: false } },
       },
     });
 

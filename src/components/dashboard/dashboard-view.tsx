@@ -81,25 +81,25 @@ async function DashboardData({ filter }: { filter: string }) {
         prisma.proposal.findMany({
             where: whereClause,
             include: {
-                items: true,
-                customer: { select: { id: true, name: true } }
+                items: { where: { isDeleted: false } },
+                customer: { where: { isDeleted: false },  select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } } } }
             },
             orderBy: { createdAt: 'desc' }
         }),
-        prisma.proposal.findMany({
+        prisma.proposal.findMany({ where: { isDeleted: false },
             take: 5,
-            include: { customer: { select: { name: true } } },
+            include: { customer: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } } },
             orderBy: { createdAt: 'desc' },
         }),
         prisma.proposal.findMany({
-            where: {
+            where: { isDeleted: false,
                 status: 'Approved',
                 createdAt: { gte: new Date(new Date().setMonth(new Date().getMonth() - 6)) }
             },
-            include: { items: true }
+            include: { items: { where: { isDeleted: false } } }
         }),
-        prisma.monthlyTarget.findMany(),
-        prisma.settings.findFirst()
+        prisma.monthlyTarget.findMany({ where: { isDeleted: false } }),
+        prisma.settings.findFirst({ where: { isDeleted: false } })
     ]);
 
     // Financials with CONTRACT amount (not proposal amount!)
@@ -112,11 +112,11 @@ async function DashboardData({ filter }: { filter: string }) {
             isDeleted: false
         },
         select: {
-            id: true,
-            contractAmount: true,
-            linkedProposalId: true,
-            estimatedMaterialCost: true,
-            estimatedLaborCost: true
+            id: { where: { isDeleted: false } },
+            contractAmount: { where: { isDeleted: false } },
+            linkedProposalId: { where: { isDeleted: false } },
+            estimatedMaterialCost: { where: { isDeleted: false } },
+            estimatedLaborCost: { where: { isDeleted: false } }
         }
     });
     

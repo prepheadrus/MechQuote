@@ -14,10 +14,10 @@ export async function createPayment(data: {
 }) {
     try {
         // 1. Get invoice details for customer info
-        const invoice = await prisma.invoice.findUnique({
+        const invoice = await prisma.invoice.findFirst({
             where: { id: data.invoiceId, isDeleted: false },
             include: {
-                customer: { select: { name: true } }
+                customer: { where: { isDeleted: false },  select: { name: { where: { isDeleted: false } } } }
             }
         });
 
@@ -63,10 +63,10 @@ export async function createPayment(data: {
 export async function deletePayment(id: string, invoiceId: string, projectId?: string) {
     try {
         // 1. Get payment details before deleting
-        const payment = await prisma.payment.findUnique({
-            where: { id },
+        const payment = await prisma.payment.findFirst({
+            where: { isDeleted: false,  id },
             include: {
-                invoice: { select: { customerId: true, invoiceNumber: true, isDeleted: true } }
+                invoice: { where: { isDeleted: false },  select: { customerId: { where: { isDeleted: false } }, invoiceNumber: { where: { isDeleted: false } }, isDeleted: { where: { isDeleted: false } } } }
             }
         });
 

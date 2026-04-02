@@ -166,35 +166,35 @@ export async function getProductAnalytics() {
                 orderBy: { name: 'asc' } 
             }),
             prisma.proposalItem.findMany({
-                where: { proposal: { status: 'Approved' } },
+                where: { isDeleted: false,  proposal: { status: 'Approved' } },
                 select: {
-                    productId: true,
-                    quantity: true,
-                    profitMargin: true,
-                    name: true,
-                    brand: true,
-                    listPrice: true,
-                    basePrice: true,
-                    discountRate: true,
-                    currency: true,
-                    proposal: {
+                    productId: { where: { isDeleted: false } },
+                    quantity: { where: { isDeleted: false } },
+                    profitMargin: { where: { isDeleted: false } },
+                    name: { where: { isDeleted: false } },
+                    brand: { where: { isDeleted: false } },
+                    listPrice: { where: { isDeleted: false } },
+                    basePrice: { where: { isDeleted: false } },
+                    discountRate: { where: { isDeleted: false } },
+                    currency: { where: { isDeleted: false } },
+                    proposal: { where: { isDeleted: false },
                         select: {
-                            exchangeRateUSD: true,
-                            exchangeRateEUR: true
+                            exchangeRateUSD: { where: { isDeleted: false } },
+                            exchangeRateEUR: { where: { isDeleted: false } }
                         }
                     }
                 }
             }),
             // Fetch Incoming Invoice Items for "Most Purchased"
             prisma.invoiceItem.findMany({
-                where: {
+                where: { isDeleted: false,
                     invoice: { type: 'Incoming' },
                     linkedProductId: { not: null }
                 },
                 select: {
-                    linkedProductId: true,
-                    quantity: true,
-                    name: true
+                    linkedProductId: { where: { isDeleted: false } },
+                    quantity: { where: { isDeleted: false } },
+                    name: { where: { isDeleted: false } }
                 }
             })
         ]);
@@ -269,7 +269,7 @@ export async function getProductList() {
 export async function getUniqueCategories() {
     try {
         const categories = await prisma.product.findMany({
-            select: { category: true },
+            select: { category: { where: { isDeleted: false } } },
             distinct: ['category'],
             where: { 
                 isDeleted: false,
@@ -279,7 +279,7 @@ export async function getUniqueCategories() {
 
         // Also include InstallationType names as they are often used as categories
         const installationTypes = await prisma.installationType.findMany({
-            select: { name: true },
+            select: { name: { where: { isDeleted: false } } },
             where: { isDeleted: false }
         });
 
@@ -322,7 +322,7 @@ export async function searchProducts(query: string) {
 
 export async function getProduct(id: string) {
     try {
-        const product = await prisma.product.findUnique({
+        const product = await prisma.product.findFirst({
             where: { id, isDeleted: false }
         });
         return { success: true, data: product };
@@ -334,16 +334,16 @@ export async function getProduct(id: string) {
 
 export async function getProductDetails(id: string) {
     try {
-        const product = await prisma.product.findUnique({ 
+        const product = await prisma.product.findFirst({
             where: { id, isDeleted: false } 
         });
         if (!product) return { success: false, error: 'Ürün bulunamadı.' };
 
         const [supplier, category, history, sales] = await Promise.all([
-            product.supplierId ? prisma.supplier.findUnique({ 
+            product.supplierId ? prisma.supplier.findFirst({
                 where: { id: product.supplierId, isDeleted: false } 
             }) : null,
-            product.installationTypeId ? prisma.installationType.findUnique({ 
+            product.installationTypeId ? prisma.installationType.findFirst({
                 where: { id: product.installationTypeId, isDeleted: false } 
             }) : null,
             prisma.purchaseHistory.findMany({
@@ -360,15 +360,15 @@ export async function getProductDetails(id: string) {
                     isDeleted: false // ✅ Soft delete filtresi
                 },
                 select: {
-                    quantity: true,
-                    profitMargin: true,
-                    basePrice: true,
-                    listPrice: true,
-                    currency: true,
-                    proposal: {
+                    quantity: { where: { isDeleted: false } },
+                    profitMargin: { where: { isDeleted: false } },
+                    basePrice: { where: { isDeleted: false } },
+                    listPrice: { where: { isDeleted: false } },
+                    currency: { where: { isDeleted: false } },
+                    proposal: { where: { isDeleted: false },
                         select: {
-                            exchangeRateUSD: true,
-                            exchangeRateEUR: true
+                            exchangeRateUSD: { where: { isDeleted: false } },
+                            exchangeRateEUR: { where: { isDeleted: false } }
                         }
                     }
                 }
@@ -426,15 +426,15 @@ export async function getProductDetails(id: string) {
 export async function getLatestPurchaseInfo(productId: string) {
     try {
         const history = await prisma.purchaseHistory.findFirst({
-            where: { productId },
+            where: { isDeleted: false,  productId },
             orderBy: { date: 'desc' },
             include: {
-                product: {
+                product: { where: { isDeleted: false },
                     select: {
-                        name: true,
-                        brand: true,
-                        model: true,
-                        unit: true
+                        name: { where: { isDeleted: false } },
+                        brand: { where: { isDeleted: false } },
+                        model: { where: { isDeleted: false } },
+                        unit: { where: { isDeleted: false } }
                     }
                 }
             }
@@ -457,19 +457,19 @@ export async function getLatestPurchaseInfo(productId: string) {
  */
 export async function getLatestProductPrice(id: string) {
     try {
-        const product = await prisma.product.findUnique({
+        const product = await prisma.product.findFirst({
             where: { id, isDeleted: false },
             select: {
-                listPrice: true,
-                discountRate: true,
-                currency: true,
-                vatRate: true,
-                priceIncludesVat: true
+                listPrice: { where: { isDeleted: false } },
+                discountRate: { where: { isDeleted: false } },
+                currency: { where: { isDeleted: false } },
+                vatRate: { where: { isDeleted: false } },
+                priceIncludesVat: { where: { isDeleted: false } }
             }
         });
 
         const latestHistory = await prisma.purchaseHistory.findFirst({
-            where: { productId: id },
+            where: { isDeleted: false,  productId: id },
             orderBy: { date: 'desc' }
         });
 
@@ -548,7 +548,7 @@ export async function createProduct(data: Omit<Product, 'id' | 'createdAt' | 'up
 export async function updateProduct(id: string, data: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt'>>) {
     try {
         // Loglama için eski veriyi çek
-        const oldProduct = await prisma.product.findUnique({ 
+        const oldProduct = await prisma.product.findFirst({
             where: { id, isDeleted: false } 
         });
 
@@ -742,7 +742,7 @@ export async function ensureProductInPrisma(productData: {
     try {
         // If ID provided, check if it exists
         if (productData.id) {
-            const existing = await prisma.product.findUnique({
+            const existing = await prisma.product.findFirst({
                 where: { id: productData.id, isDeleted: false }
             });
 
@@ -793,9 +793,9 @@ export async function findDuplicateProducts() {
         const products = await prisma.product.findMany({
             where: { isDeleted: false },
             include: {
-                _count: {
+                _count: { where: { isDeleted: false },
                     select: {
-                        purchaseHistory: true
+                        purchaseHistory: { where: { isDeleted: false } }
                     }
                 }
             },

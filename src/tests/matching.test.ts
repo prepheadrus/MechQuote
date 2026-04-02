@@ -358,7 +358,7 @@ describe('Matching System', () => {
             };
             (prisma.feedback.findFirst as jest.Mock).mockResolvedValue(null);
             (prisma.product.findFirst as jest.Mock).mockResolvedValue(null);
-            (prisma.productAlias.findUnique as jest.Mock).mockResolvedValue(mockAlias);
+            (prisma.productAlias.findFirst as jest.Mock).mockResolvedValue(mockAlias);
 
             // Act
             const result = await matchProduct('Vana 1"', 'supplier-1');
@@ -378,7 +378,7 @@ describe('Matching System', () => {
             };
             (prisma.feedback.findFirst as jest.Mock).mockResolvedValue(null);
             (prisma.product.findFirst as jest.Mock).mockResolvedValue(null);
-            (prisma.productAlias.findUnique as jest.Mock).mockResolvedValue(null);
+            (prisma.productAlias.findFirst as jest.Mock).mockResolvedValue(null);
             (prisma.productAlias.findFirst as jest.Mock).mockResolvedValue(mockGlobalAlias);
 
             // Act

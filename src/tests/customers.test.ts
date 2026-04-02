@@ -239,7 +239,7 @@ describe('Customers Actions', () => {
                 projects: [],
                 transactions: [],
             };
-            (prisma.customer.findUnique as jest.Mock).mockResolvedValue(customerWithRelations);
+            (prisma.customer.findFirst as jest.Mock).mockResolvedValue(customerWithRelations);
 
             // Act
             const result = await getCustomer('1');
@@ -247,7 +247,7 @@ describe('Customers Actions', () => {
             // Assert
             expect(result.success).toBe(true);
             expect(result.data?.id).toBe('1');
-            expect(prisma.customer.findUnique).toHaveBeenCalledWith({
+            expect(prisma.customer.findFirst).toHaveBeenCalledWith({
                 where: { id: '1' },
                 include: {
                     proposals: { orderBy: { createdAt: 'desc' } },
@@ -263,7 +263,7 @@ describe('Customers Actions', () => {
 
         it('should return null for non-existent customer - EDGE CASE', async () => {
             // Arrange
-            (prisma.customer.findUnique as jest.Mock).mockResolvedValue(null);
+            (prisma.customer.findFirst as jest.Mock).mockResolvedValue(null);
 
             // Act
             const result = await getCustomer('non-existent');
@@ -275,7 +275,7 @@ describe('Customers Actions', () => {
 
         it('should handle database error - ERROR HANDLING', async () => {
             // Arrange
-            (prisma.customer.findUnique as jest.Mock).mockRejectedValue(new Error('DB error'));
+            (prisma.customer.findFirst as jest.Mock).mockRejectedValue(new Error('DB error'));
 
             // Act
             const result = await getCustomer('1');

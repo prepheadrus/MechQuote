@@ -158,9 +158,9 @@ export async function getSuggestedProductByFeedback(invoiceItemName: string) {
         createdAt: 'desc',
       },
       select: {
-        productId: true,
-        productName: true,
-        confidence: true,
+        productId: { where: { isDeleted: false } },
+        productName: { where: { isDeleted: false } },
+        confidence: { where: { isDeleted: false } },
       },
     });
 
@@ -198,12 +198,12 @@ export async function getProductFeedbackHistory(productId: string, limit: number
       },
       take: limit,
       select: {
-        id: true,
-        invoiceItemName: true,
-        type: true,
-        confidence: true,
-        method: true,
-        createdAt: true,
+        id: { where: { isDeleted: false } },
+        invoiceItemName: { where: { isDeleted: false } },
+        type: { where: { isDeleted: false } },
+        confidence: { where: { isDeleted: false } },
+        method: { where: { isDeleted: false } },
+        createdAt: { where: { isDeleted: false } },
       },
     });
 

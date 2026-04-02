@@ -163,15 +163,15 @@ export async function syncAllProjects(): Promise<{
   try {
     console.log('[Elasticsearch] Starting full projects sync...');
 
-    const projects = await prisma.project.findMany({
+    const projects = await prisma.project.findMany({ where: { isDeleted: false },
       include: {
-        customer: true,
+        customer: { where: { isDeleted: false } },
         
-        _count: {
+        _count: { where: { isDeleted: false },
           select: {
-            proposals: true,
-            invoices: true,
-            jobAssignments: true,
+            proposals: { where: { isDeleted: false } },
+            invoices: { where: { isDeleted: false } },
+            jobAssignments: { where: { isDeleted: false } },
           },
         },
       },
@@ -206,16 +206,16 @@ export async function syncAllProjects(): Promise<{
 
 export async function syncProject(projectId: string): Promise<boolean> {
   try {
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
+    const project = await prisma.project.findFirst({
+      where: { isDeleted: false,  id: projectId },
       include: {
-        customer: true,
+        customer: { where: { isDeleted: false } },
         
-        _count: {
+        _count: { where: { isDeleted: false },
           select: {
-            proposals: true,
-            invoices: true,
-            jobAssignments: true,
+            proposals: { where: { isDeleted: false } },
+            invoices: { where: { isDeleted: false } },
+            jobAssignments: { where: { isDeleted: false } },
           },
         },
       },
@@ -266,7 +266,7 @@ export async function searchProjectsWithFallback(
   console.log('[Elasticsearch] Fallback to Prisma for projects:', query);
   
   const projects = await prisma.project.findMany({
-    where: {
+    where: { isDeleted: false,
       OR: [
         { name: { contains: query } },
         { customer: { name: { contains: query } } },
@@ -274,7 +274,7 @@ export async function searchProjectsWithFallback(
     },
     take: options.size || 20,
     include: {
-      customer: true,
+      customer: { where: { isDeleted: false } },
     },
   });
 

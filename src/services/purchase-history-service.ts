@@ -12,7 +12,7 @@ import { logger } from '@/lib/logger';
  */
 export async function wipeAllPurchaseHistory() {
     try {
-        await prisma.purchaseHistory.deleteMany({});
+        await prisma.purchaseHistory.updateMany({ data: { isDeleted: true, deletedAt: new Date() } });
         revalidatePath('/', 'layout');
         return { success: true };
     } catch (error) {
@@ -26,7 +26,7 @@ export async function wipeAllPurchaseHistory() {
  */
 export async function cleanupDuplicatePurchaseHistory() {
     try {
-        const history = await prisma.purchaseHistory.findMany();
+        const history = await prisma.purchaseHistory.findMany({ where: { isDeleted: false } });
         const groups = new Map<string, PurchaseHistory[]>();
 
         // 1. Check for negative prices (bugs) and duplicates
@@ -67,9 +67,10 @@ export async function cleanupDuplicatePurchaseHistory() {
         }
 
         if (idsToDelete.length > 0) {
-            await prisma.purchaseHistory.deleteMany({
-                where: { id: { in: idsToDelete } }
-            });
+            await prisma.purchaseHistory.updateMany({
+    where: { id: { in: idsToDelete } },
+    data: { isDeleted: true, deletedAt: new Date() }
+});
             logger.info(`[Cleanup] Deleted ${idsToDelete.length} records (duplicates/corrupt).`);
             revalidatePath('/', 'layout');
         }
@@ -87,11 +88,11 @@ export async function cleanupDuplicatePurchaseHistory() {
 export async function regeneratePurchaseHistory() {
     try {
         // 1. Clear existing history to avoid duplicates
-        await prisma.purchaseHistory.deleteMany({});
+        await prisma.purchaseHistory.updateMany({ data: { isDeleted: true, deletedAt: new Date() } });
 
         // 2. Get all invoice items that are linked to a product
         const items = await prisma.invoiceItem.findMany({
-            where: { linkedProductId: { not: null } },
+            where: { isDeleted: false,  linkedProductId: { not: null } },
             include: { invoice: true }
         });
 
@@ -148,8 +149,8 @@ export async function linkInvoiceItemToProduct(
 ) {
     try {
         // Get the invoice item with invoice details
-        const item = await prisma.invoiceItem.findUnique({
-            where: { id: invoiceItemId },
+        const item = await prisma.invoiceItem.findFirst({
+            where: { isDeleted: false,  id: invoiceItemId },
             include: {
                 invoice: true,
                 product: true // Include product for name
@@ -198,12 +199,12 @@ export async function linkInvoiceItemToProduct(
             const netPrice = item.unitPrice * (1 - (item.discountRate || 0) / 100);
 
             // Check if product exists before trying to link (to avoid FK errors)
-            const productExists = await prisma.product.findUnique({ where: { id: productId } });
+            const productExists = await prisma.product.findFirst({ where: { isDeleted: false,  id: productId } });
 
             if (productExists) {
                 // Check if history already exists for this invoice and product to avoid duplicates
                 const existingHistory = await prisma.purchaseHistory.findFirst({
-                    where: {
+                    where: { isDeleted: false,
                         invoiceId: item.invoiceId,
                         productId: productId
                     }
@@ -285,18 +286,18 @@ export async function getPurchasedProductsBySupplier(supplierName: string) {
         // Query InvoiceItems directly to get the actionable purchase data (price, quantity, invoice no)
         // We find items from invoices sent by this supplier
         const items = await prisma.invoiceItem.findMany({
-            where: {
+            where: { isDeleted: false,
                 invoice: {
                     senderName: { contains: supplierName }, // Flexible match
                     type: 'Incoming'
                 }
             },
             include: {
-                invoice: {
+                invoice: { where: { isDeleted: false },
                     select: {
-                        invoiceDate: true,
-                        invoiceNumber: true,
-                        currency: true
+                        invoiceDate: { where: { isDeleted: false } },
+                        invoiceNumber: { where: { isDeleted: false } },
+                        currency: { where: { isDeleted: false } }
                     }
                 }
             },
@@ -311,8 +312,8 @@ export async function getPurchasedProductsBySupplier(supplierName: string) {
             .filter((id): id is string => id !== null);
 
         const products = await prisma.product.findMany({
-            where: { id: { in: linkedProductIds } },
-            select: { id: true, name: true, unit: true }
+            where: { isDeleted: false,  id: { in: linkedProductIds } },
+            select: { id: { where: { isDeleted: false } }, name: { where: { isDeleted: false } }, unit: { where: { isDeleted: false } } }
         });
 
         const productMap = new Map(products.map(p => [p.id, p]));

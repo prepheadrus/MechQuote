@@ -24,8 +24,8 @@ export async function getCachedAIResult(
   fileType: string = 'invoice'
 ): Promise<{ success: boolean; data?: any; provider?: string } | null> {
   try {
-    const cached = await prisma.aICache.findUnique({
-      where: { fileHash },
+    const cached = await prisma.aICache.findFirst({
+      where: { isDeleted: false,  fileHash },
     });
 
     // Cache miss - logla
@@ -45,7 +45,7 @@ export async function getCachedAIResult(
     // Süresi dolmuş mu kontrol et
     if (cached.expiresAt < new Date()) {
       // Cache'i sil
-      await prisma.aICache.delete({ where: { id: cached.id } });
+      await prisma.aICache.update({ where: { id: cached.id } });
       logger.warn(`Cache EXPIRED: ${fileHash.substring(0, 16)}... (${fileType})`);
       await prisma.auditLog.create({
         data: {
@@ -150,8 +150,8 @@ export async function cacheAIResult(
  */
 export async function cleanupExpiredCache(): Promise<number> {
   try {
-    const deleted = await prisma.aICache.deleteMany({
-      where: {
+    const deleted = await prisma.aICache.updateMany({
+    where: {
         expiresAt: {
           lt: new Date(),
         },
@@ -182,11 +182,11 @@ export async function getCacheStats(): Promise<{
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
     // Cache count
-    const total = await prisma.aICache.count();
+    const total = await prisma.aICache.count({ where: { isDeleted: false } });
 
     // Expiring soon (7 gün)
     const expiringSoon = await prisma.aICache.count({
-      where: {
+      where: { isDeleted: false,
         expiresAt: {
           lt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
@@ -195,15 +195,15 @@ export async function getCacheStats(): Promise<{
 
     // Hit/Miss/Write counts for last 24 hours
     const hits24h = await prisma.auditLog.count({
-      where: {
+      where: { isDeleted: false,
         action: 'CACHE_HIT',
         entityType: 'AICache',
         createdAt: { gte: twentyFourHoursAgo }
       }
-    });
+});
 
     const misses24h = await prisma.auditLog.count({
-      where: {
+      where: { isDeleted: false,
         action: 'CACHE_MISS',
         entityType: 'AICache',
         createdAt: { gte: twentyFourHoursAgo }
@@ -211,7 +211,7 @@ export async function getCacheStats(): Promise<{
     });
 
     const writes24h = await prisma.auditLog.count({
-      where: {
+      where: { isDeleted: false,
         action: 'CACHE_WRITE',
         entityType: 'AICache',
         createdAt: { gte: twentyFourHoursAgo }

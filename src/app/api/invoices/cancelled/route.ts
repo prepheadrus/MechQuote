@@ -23,21 +23,21 @@ export async function GET(request: NextRequest) {
                 cancelType: { not: null } // Only cancelled (not hard deleted)
             },
             include: {
-                customer: true,
+                customer: { where: { isDeleted: false } },
                 items: {
                     where: { isDeleted: true },
                     select: {
-                        id: true,
-                        name: true,
-                        quantity: true,
-                        unitPrice: true,
-                        listPrice: true,
-                        discountRate: true,
-                        netPrice: true,
-                        supplierName: true,
-                        invoiceDate: true,
-                        cancelledAt: true,
-                        cancelReason: true
+                        id: { where: { isDeleted: false } },
+                        name: { where: { isDeleted: false } },
+                        quantity: { where: { isDeleted: false } },
+                        unitPrice: { where: { isDeleted: false } },
+                        listPrice: { where: { isDeleted: false } },
+                        discountRate: { where: { isDeleted: false } },
+                        netPrice: { where: { isDeleted: false } },
+                        supplierName: { where: { isDeleted: false } },
+                        invoiceDate: { where: { isDeleted: false } },
+                        cancelledAt: { where: { isDeleted: false } },
+                        cancelReason: { where: { isDeleted: false } }
                     }
                 }
             },

@@ -24,7 +24,7 @@ export async function createSupplierQuote(data: {
                 }
             },
             include: {
-                items: true
+                items: { where: { isDeleted: false } }
             }
         });
 
@@ -39,9 +39,9 @@ export async function createSupplierQuote(data: {
 export async function getSupplierQuotesForProposal(proposalId: string) {
     try {
         const quotes = await prisma.supplierQuote.findMany({
-            where: { proposalId },
+            where: { isDeleted: false,  proposalId },
             include: {
-                items: true
+                items: { where: { isDeleted: false } }
             },
             orderBy: { date: 'desc' }
         });

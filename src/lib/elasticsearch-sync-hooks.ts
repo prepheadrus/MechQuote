@@ -80,7 +80,7 @@ export async function syncUpdateProduct(productId: string, data: any) {
 export async function syncDeleteProduct(productId: string) {
   try {
     // Delete from Prisma
-    await prisma.product.delete({ where: { id: productId } });
+    await prisma.product.update({ where: { id: productId }, data: { isDeleted: true, deletedAt: new Date() } });
     
     // Remove from Elasticsearch (async, non-blocking)
     syncToEsInBackground(() => unsyncProduct(productId));
@@ -130,7 +130,7 @@ export async function syncUpdateCustomer(customerId: string, data: any) {
 
 export async function syncDeleteCustomer(customerId: string) {
   try {
-    await prisma.customer.delete({ where: { id: customerId } });
+    await prisma.customer.update({ where: { id: customerId }, data: { isDeleted: true, deletedAt: new Date() } });
     syncToEsInBackground(() => unsyncCustomer(customerId));
     return true;
   } catch (error: any) {
@@ -174,7 +174,7 @@ export async function syncUpdateProposal(proposalId: string, data: any) {
 
 export async function syncDeleteProposal(proposalId: string) {
   try {
-    await prisma.proposal.delete({ where: { id: proposalId } });
+    await prisma.proposal.update({ where: { id: proposalId }, data: { isDeleted: true, deletedAt: new Date() } });
     syncToEsInBackground(() => unsyncProposal(proposalId));
     return true;
   } catch (error: any) {
@@ -218,7 +218,7 @@ export async function syncUpdateInvoice(invoiceId: string, data: any) {
 
 export async function syncDeleteInvoice(invoiceId: string) {
   try {
-    await prisma.invoice.delete({ where: { id: invoiceId } });
+    await prisma.invoice.update({ where: { id: invoiceId }, data: { isDeleted: true, deletedAt: new Date() } });
     syncToEsInBackground(() => unsyncInvoice(invoiceId));
     return true;
   } catch (error: any) {

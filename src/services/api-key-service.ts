@@ -31,8 +31,8 @@ export async function saveAPIKey(
     const masked = maskApiKey(key);
 
     // Zaten var mı kontrol et (aynı key)
-    const existing = await prisma.aPIKey.findUnique({
-      where: { keyHash },
+    const existing = await prisma.aPIKey.findFirst({
+      where: { isDeleted: false,  keyHash },
     });
 
     if (existing) {
@@ -116,9 +116,10 @@ export async function toggleAPIKey(id: string, isActive: boolean): Promise<boole
  */
 export async function deleteAPIKey(id: string): Promise<boolean> {
   try {
-    await prisma.aPIKey.delete({
-      where: { id },
-    });
+    await prisma.aPIKey.update({
+    where: { id },
+    data: { isDeleted: true, deletedAt: new Date() }
+});
     console.log(`[API Key] 🗑️ Deleted: ${id}`);
     return true;
   } catch (error: any) {
@@ -142,7 +143,7 @@ export async function getNextAvailableAPIKey(
 
     // Aktif key'leri al
     const keys = await prisma.aPIKey.findMany({
-      where: {
+      where: { isDeleted: false,
         provider,
         isActive: true,
       },
@@ -202,7 +203,7 @@ export async function getAPIKeyStats(): Promise<{
   byProvider: Record<string, number>;
 }> {
   try {
-    const keys = await prisma.aPIKey.findMany();
+    const keys = await prisma.aPIKey.findMany({ where: { isDeleted: false } });
 
     const stats = {
       total: keys.length,

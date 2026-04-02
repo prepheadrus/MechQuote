@@ -138,13 +138,13 @@ export async function syncAllCustomers(): Promise<{
   try {
     console.log('[Elasticsearch] Starting full customers sync...');
 
-    const customers = await prisma.customer.findMany({
+    const customers = await prisma.customer.findMany({ where: { isDeleted: false },
       include: {
-        _count: {
+        _count: { where: { isDeleted: false },
           select: {
-            proposals: true,
-            invoices: true,
-            projects: true,
+            proposals: { where: { isDeleted: false } },
+            invoices: { where: { isDeleted: false } },
+            projects: { where: { isDeleted: false } },
           },
         },
       },
@@ -179,14 +179,14 @@ export async function syncAllCustomers(): Promise<{
 
 export async function syncCustomer(customerId: string): Promise<boolean> {
   try {
-    const customer = await prisma.customer.findUnique({
-      where: { id: customerId },
+    const customer = await prisma.customer.findFirst({
+      where: { isDeleted: false,  id: customerId },
       include: {
-        _count: {
+        _count: { where: { isDeleted: false },
           select: {
-            proposals: true,
-            invoices: true,
-            projects: true,
+            proposals: { where: { isDeleted: false } },
+            invoices: { where: { isDeleted: false } },
+            projects: { where: { isDeleted: false } },
           },
         },
       },
@@ -244,7 +244,7 @@ export async function searchCustomersWithFallback(
   console.log('[Elasticsearch] Fallback to Prisma for customers:', query);
   
   const customers = await prisma.customer.findMany({
-    where: {
+    where: { isDeleted: false,
       OR: [
         { name: { contains: query } },
         { taxId: { contains: query } },
@@ -253,11 +253,11 @@ export async function searchCustomersWithFallback(
     },
     take: options.size || 20,
     include: {
-      _count: {
+      _count: { where: { isDeleted: false },
         select: {
-          proposals: true,
-          invoices: true,
-          projects: true,
+          proposals: { where: { isDeleted: false } },
+          invoices: { where: { isDeleted: false } },
+          projects: { where: { isDeleted: false } },
         },
       },
     },

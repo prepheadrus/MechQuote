@@ -14,7 +14,7 @@ export async function getBulkPurchasingInsights(productIds: string[]) {
 
         // Fetch all history for these products
         const history = await prisma.purchaseHistory.findMany({
-            where: {
+            where: { isDeleted: false,
                 productId: { in: validIds }
             },
             orderBy: [

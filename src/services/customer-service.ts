@@ -32,7 +32,7 @@ export async function findOrCreateCustomerFromInvoice(
 
         if (isValidTaxId) {
             customer = await prisma.customer.findFirst({
-                where: { taxId: cleanTaxId }
+                where: { isDeleted: false,  taxId: cleanTaxId }
             });
             if (customer) {
                 logger.info(`Found by TaxID: ${customer.name} (${customer.id})`);
@@ -71,12 +71,12 @@ export async function findOrCreateCustomerFromInvoice(
             const nameToSearch = senderName.trim();
             // Try exact first
             customer = await prisma.customer.findFirst({
-                where: { name: nameToSearch }
+                where: { isDeleted: false,  name: nameToSearch }
             });
 
             // If not found, try common naming variations or case-insensitive (approximate for SQLite)
             if (!customer) {
-                const customers = await prisma.customer.findMany();
+                const customers = await prisma.customer.findMany({ where: { isDeleted: false } });
                 customer = customers.find(c =>
                     c.name.toLowerCase() === nameToSearch.toLowerCase() ||
                     c.name.toLowerCase().includes(nameToSearch.toLowerCase()) ||

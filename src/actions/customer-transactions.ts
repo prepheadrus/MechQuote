@@ -95,8 +95,8 @@ export async function getCustomerTransactions(customerId: string) {
 export async function deleteTransaction(transactionId: string) {
     try {
         await db.$transaction(async (tx) => {
-            const transaction = await tx.customerTransaction.findUnique({
-                where: { id: transactionId }
+            const transaction = await tx.customerTransaction.findFirst({
+                where: { isDeleted: false,  id: transactionId }
             });
 
             if (!transaction) throw new Error('Transaction not found');
@@ -111,9 +111,7 @@ export async function deleteTransaction(transactionId: string) {
                 }
             });
 
-            await tx.customerTransaction.delete({
-                where: { id: transactionId }
-            });
+            await tx.customerTransaction.update({ where: { id: transactionId }, data: { isDeleted: true, deletedAt: new Date() } });
         });
 
         revalidatePath('/customers');
@@ -145,9 +143,7 @@ export async function deleteTransactionByReference(referenceId: string) {
                 });
 
                 // Delete transaction
-                await tx.customerTransaction.delete({
-                    where: { id: transaction.id }
-                });
+                await tx.customerTransaction.update({ where: { id: transaction.id }, data: { isDeleted: true, deletedAt: new Date() } });
             }
         });
 

@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger';
 export async function getSettings() {
     try {
         // Settings is a singleton, so we take the first one
-        const settings = await prisma.settings.findFirst();
+        const settings = await prisma.settings.findFirst({ where: { isDeleted: false } });
         return { success: true, data: settings };
     } catch (error) {
         logger.error('Failed to fetch settings:', error);
@@ -18,7 +18,7 @@ export async function getSettings() {
 
 export async function updateSettings(data: Partial<Settings>) {
     try {
-        const existing = await prisma.settings.findFirst();
+        const existing = await prisma.settings.findFirst({ where: { isDeleted: false } });
 
         // Convert JSON string to JSON object for bankAccounts if needed
         const updateData: Prisma.SettingsUpdateInput = {};

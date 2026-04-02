@@ -130,11 +130,11 @@ export async function syncAllPersonnel(): Promise<{
   try {
     console.log('[Elasticsearch] Starting full personnel sync...');
 
-    const personnel = await prisma.personnel.findMany({
+    const personnel = await prisma.personnel.findMany({ where: { isDeleted: false },
       include: {
-        _count: {
+        _count: { where: { isDeleted: false },
           select: {
-            assignments: true,
+            assignments: { where: { isDeleted: false } },
             
           },
         },
@@ -170,12 +170,12 @@ export async function syncAllPersonnel(): Promise<{
 
 export async function syncPersonnel(personnelId: string): Promise<boolean> {
   try {
-    const personnel = await prisma.personnel.findUnique({
-      where: { id: personnelId },
+    const personnel = await prisma.personnel.findFirst({
+      where: { isDeleted: false,  id: personnelId },
       include: {
-        _count: {
+        _count: { where: { isDeleted: false },
           select: {
-            assignments: true,
+            assignments: { where: { isDeleted: false } },
             
           },
         },
@@ -227,7 +227,7 @@ export async function searchPersonnelWithFallback(
   console.log('[Elasticsearch] Fallback to Prisma for personnel:', query);
   
   const personnel = await prisma.personnel.findMany({
-    where: {
+    where: { isDeleted: false,
       OR: [
         { name: { contains: query } },
         { email: { contains: query } },

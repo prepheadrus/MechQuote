@@ -77,22 +77,22 @@ export async function getCustomerStats() {
                 proposals: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     select: {
-                        id: true,
-                        totalAmount: true,
-                        createdAt: true,
-                        status: true,
+                        id: { where: { isDeleted: false } },
+                        totalAmount: { where: { isDeleted: false } },
+                        createdAt: { where: { isDeleted: false } },
+                        status: { where: { isDeleted: false } },
                         linkedInProjects: {
                             where: { isDeleted: false }, // ✅ Nested filtre
-                            select: { id: true }
+                            select: { id: { where: { isDeleted: false } } }
                         }
                     }
                 },
                 projects: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     select: {
-                        contractAmount: true,
-                        status: true,
-                        createdAt: true
+                        contractAmount: { where: { isDeleted: false } },
+                        status: { where: { isDeleted: false } },
+                        createdAt: { where: { isDeleted: false } }
                     }
                 }
             },
@@ -143,7 +143,7 @@ export async function getCustomerStats() {
 
 export async function getCustomer(id: string) {
     try {
-        const customer = await prisma.customer.findUnique({
+        const customer = await prisma.customer.findFirst({
             where: { id, isDeleted: false },
             include: {
                 proposals: {
@@ -275,7 +275,7 @@ export async function createPeriodTransfer(
       return { success: false, error: 'Tutar 0 olamaz' };
     }
 
-    const customer = await prisma.customer.findUnique({
+    const customer = await prisma.customer.findFirst({
       where: { id: customerId, isDeleted: false }
     });
 
@@ -431,9 +431,9 @@ export async function bulkCreateCustomers(items: Array<{
 export async function getCustomerStatement(id: string) {
     try {
         const [customer, transactions] = await Promise.all([
-            prisma.customer.findUnique({ where: { id, isDeleted: false } }),
+            prisma.customer.findFirst({ where: { id, isDeleted: false } }),
             prisma.customerTransaction.findMany({
-                where: { customerId: id },
+                where: { isDeleted: false,  customerId: id },
                 orderBy: { date: 'asc' }
             })
         ]);
@@ -482,7 +482,7 @@ export async function getCustomerStatement(id: string) {
  */
 export async function changeProposalCustomer(proposalId: string, targetCustomerId: string) {
     try {
-        const targetCustomer = await prisma.customer.findUnique({
+        const targetCustomer = await prisma.customer.findFirst({
             where: { id: targetCustomerId, isDeleted: false }
         });
 
