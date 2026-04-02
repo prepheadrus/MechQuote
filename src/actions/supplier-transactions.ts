@@ -22,6 +22,7 @@ export async function createSupplierTransaction(input: {
     referenceId?: string;
     referenceType?: 'ProjectExpense' | 'Invoice' | 'Manual';
     date?: Date;
+    projectId?: string;
 }) {
     try {
         const { supplierId, amount, type, category, description, referenceId, referenceType, date } = input;

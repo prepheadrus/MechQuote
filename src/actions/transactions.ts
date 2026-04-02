@@ -202,9 +202,11 @@ export async function deleteTransaction(id: string, projectId: string) {
                     const filtered = history.filter((p: any) => p.id !== id);
 
                     if (filtered.length !== history.length) {
+                        // For JSON fields, we must still update individually, but we batch them
+                        // in a single transaction and don't fetch extra data inside the loop
                         updates.push(prisma.jobAssignment.update({
                             where: { id: assignment.id },
-                            data: { paymentHistory: filtered }
+                            data: { paymentHistory: JSON.stringify(filtered) }
                         }));
                     }
                 } catch (e) {

@@ -339,21 +339,77 @@ export async function createBulkPeriodTransfer(
     let successCount = 0;
     let errorCount = 0;
 
+    // Fetch all needed customers at once
+    const customerIds = transfers.map(t => t.customerId);
+    const customers = await prisma.customer.findMany({
+      where: { id: { in: customerIds }, isDeleted: false }
+    });
+
+    const validCustomerIds = new Set(customers.map(c => c.id));
+    const customerMap = new Map(customers.map(c => [c.id, c]));
+
+    const transactionsData = [];
+    const updateCustomerOperations = [];
+
     for (const transfer of transfers) {
-      const result = await createPeriodTransfer(
-        transfer.customerId,
-        transfer.amount,
-        transfer.period,
-        transfer.description
+      if (!transfer.customerId || !transfer.period) {
+        errorCount++;
+        results.push({ ...transfer, status: 'error', error: 'Müşteri ID ve dönem zorunludur' });
+        continue;
+      }
+
+      if (Math.abs(transfer.amount) < 0.01) {
+        errorCount++;
+        results.push({ ...transfer, status: 'error', error: 'Tutar 0 olamaz' });
+        continue;
+      }
+
+      if (!validCustomerIds.has(transfer.customerId)) {
+        errorCount++;
+        results.push({ ...transfer, status: 'error', error: 'Müşteri bulunamadı' });
+        continue;
+      }
+
+      const customer = customerMap.get(transfer.customerId);
+      const amount = transfer.amount;
+
+      // Prepare transaction insert
+      transactionsData.push({
+        customerId: transfer.customerId,
+        amount: Math.abs(amount),
+        type: amount > 0 ? 'Debt' : 'Credit',
+        category: 'Dönem Devir',
+        description: transfer.description || `${transfer.period} dönemi devir bakiyesi - ${customer?.name}`,
+        date: new Date(),
+        referenceType: 'PeriodTransfer'
+      });
+
+      // Prepare customer update
+      updateCustomerOperations.push(
+        prisma.customer.update({
+          where: { id: transfer.customerId },
+          data: {
+            balance: {
+              increment: amount > 0 ? amount : 0,
+              decrement: amount < 0 ? Math.abs(amount) : 0
+            }
+          }
+        })
       );
 
-      if (result.success) {
-        successCount++;
-        results.push({ ...transfer, status: 'success' });
-      } else {
-        errorCount++;
-        results.push({ ...transfer, status: 'error', error: result.error });
-      }
+      successCount++;
+      results.push({ ...transfer, status: 'success' });
+    }
+
+    if (transactionsData.length > 0) {
+      await prisma.$transaction([
+        // Single batch insert
+        prisma.customerTransaction.createMany({
+          data: transactionsData
+        }),
+        // Batch updates
+        ...updateCustomerOperations
+      ]);
     }
 
     revalidatePath('/customers');
