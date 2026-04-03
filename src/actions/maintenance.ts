@@ -153,6 +153,8 @@ export async function reconcileCustomerBalances() {
         const existingRefs = new Set(existingTransactions.map(t => t.referenceId).filter(Boolean));
         logs.push(`Found ${existingRefs.size} existing transactions.`);
 
+        const customerBalances = new Map<string, number>();
+
         // 2. Scan Invoices - CORRECTED: Different types for different invoice types
         const invoices = await prisma.invoice.findMany({
             where: { isDeleted: false,
@@ -161,14 +163,18 @@ export async function reconcileCustomerBalances() {
         });
 
         let newInvoiceTxCount = 0;
+        const invoiceTransactions = [];
         for (const invoice of invoices) {
             if (invoice.customerId && !existingRefs.has(invoice.id)) {
                 // CORRECTED: Outgoing = Debt, Incoming = Credit
                 const type = invoice.type === 'Outgoing' ? 'Debt' : 'Credit';
+                const signedAmount = type === 'Debt'
+                    ? invoice.totalAmount  // Positive: customer owes us
+                    : -invoice.totalAmount; // Negative: we owe supplier
 
-                await createTransaction({
+                invoiceTransactions.push({
                     customerId: invoice.customerId,
-                    amount: invoice.totalAmount,
+                    amount: signedAmount,
                     type: type,
                     description: `Fatura: ${invoice.invoiceNumber} (${invoice.type === 'Outgoing' ? 'Satış' : 'Alış'})`,
                     referenceId: invoice.id,
@@ -176,8 +182,20 @@ export async function reconcileCustomerBalances() {
                     category: invoice.type === 'Outgoing' ? 'Sales' : 'Purchase',
                     date: invoice.invoiceDate
                 });
+
+                customerBalances.set(
+                    invoice.customerId,
+                    (customerBalances.get(invoice.customerId) || 0) + signedAmount
+                );
+
                 newInvoiceTxCount++;
             }
+        }
+
+        if (invoiceTransactions.length > 0) {
+            await prisma.customerTransaction.createMany({
+                data: invoiceTransactions
+            });
         }
         logs.push(`Created ${newInvoiceTxCount} missing transactions from Invoices.`);
 
@@ -187,11 +205,14 @@ export async function reconcileCustomerBalances() {
         });
 
         let newProposalTxCount = 0;
+        const proposalTransactions = [];
         for (const proposal of proposals) {
-            if (!existingRefs.has(proposal.id)) {
-                await createTransaction({
+            if (proposal.customerId && !existingRefs.has(proposal.id)) {
+                const signedAmount = proposal.totalAmount;
+
+                proposalTransactions.push({
                     customerId: proposal.customerId,
-                    amount: proposal.totalAmount,
+                    amount: signedAmount,
                     type: 'Debt',
                     description: `Teklif Onayı: ${proposal.quoteNumber} - ${proposal.projectName}`,
                     referenceId: proposal.id,
@@ -199,10 +220,28 @@ export async function reconcileCustomerBalances() {
                     category: 'Sales',
                     date: proposal.createdAt // Or updated at?
                 });
+
+                customerBalances.set(
+                    proposal.customerId,
+                    (customerBalances.get(proposal.customerId) || 0) + signedAmount
+                );
+
                 newProposalTxCount++;
             }
         }
+
+        if (proposalTransactions.length > 0) {
+            await prisma.customerTransaction.createMany({
+                data: proposalTransactions
+            });
+        }
         logs.push(`Created ${newProposalTxCount} missing transactions from Proposals.`);
+
+        // Apply bulk balance updates for the created transactions efficiently
+        // Note: we'll also run the full customer transaction recount below, so technically
+        // we wouldn't need this block if the next block runs. However, since the next block
+        // calculates totals by querying *all* transactions, we don't need to bulk update here separately,
+        // the 4. Recalculate Totals step will fix it anyway. But we leave this mapped balance just in case.
 
         // 4. Recalculate Totals for ALL Customers
         const customers = await prisma.customer.findMany({ where: { isDeleted: false },
