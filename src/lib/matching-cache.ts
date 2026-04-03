@@ -189,10 +189,51 @@ export const aiTerminologyCache = new MatchingCache<any>(
 // ============================================================================
 
 /**
- * Generate cache key from parameters
+ * Helper to stringify objects predictably (sorting keys) and handling edge cases safely
+ */
+function stringifyPredictable(val: any, seen = new WeakSet()): string {
+    if (val === null) return 'null';
+    if (val === undefined) return 'undefined';
+
+    const type = typeof val;
+    if (type === 'symbol' || type === 'function') {
+        return val.toString();
+    }
+
+    if (type !== 'object') {
+        return String(val);
+    }
+
+    if (seen.has(val)) {
+        return '[Circular]';
+    }
+    seen.add(val);
+
+    if (Array.isArray(val)) {
+        const arrStr = val.map(item => stringifyPredictable(item, seen)).join(',');
+        return `[${arrStr}]`;
+    }
+
+    const keys = Object.keys(val).sort();
+    const props = keys.map(key => {
+        return `"${key}":${stringifyPredictable(val[key], seen)}`;
+    }).join(',');
+
+    return `{${props}}`;
+}
+
+/**
+ * Generate cache key from parameters predictably
  */
 export function generateCacheKey(...args: any[]): string {
-    return args.map(arg => JSON.stringify(arg)).join('|');
+    return args.map(arg => {
+        try {
+            return stringifyPredictable(arg);
+        } catch (error) {
+            // Fallback in case of unexpected errors during stringification
+            return typeof arg === 'object' ? '[ComplexObject]' : String(arg);
+        }
+    }).join('|');
 }
 
 /**
