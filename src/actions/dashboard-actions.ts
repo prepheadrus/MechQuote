@@ -58,8 +58,8 @@ export const getDashboardStats = cache(async function getDashboardStats() {
                     dueDate: true,
                     status: true,
                     payments: { where: { isDeleted: false },  select: { amount: true } },
-                    customer: { where: { isDeleted: false },  select: { id: true, name: true } },
-                    project: { where: { isDeleted: false },  select: { id: true, name: true } }
+                    customer: { select: { id: true, name: true } },
+                    project: { select: { id: true, name: true } }
                 }
             }),
             // INCOMING INVOICES - Optimized with select
@@ -70,8 +70,8 @@ export const getDashboardStats = cache(async function getDashboardStats() {
                     totalAmount: true,
                     dueDate: true,
                     status: true,
-                    customer: { where: { isDeleted: false },  select: { id: true, name: true } },
-                    project: { where: { isDeleted: false },  select: { id: true, name: true } }
+                    customer: { select: { id: true, name: true } },
+                    project: { select: { id: true, name: true } }
                 }
             }),
             // RETURN INVOICES - Optimized with select
@@ -80,8 +80,8 @@ export const getDashboardStats = cache(async function getDashboardStats() {
                 select: {
                     id: true,
                     totalAmount: true,
-                    customer: { where: { isDeleted: false },  select: { id: true, name: true } },
-                    project: { where: { isDeleted: false },  select: { id: true, name: true } }
+                    customer: { select: { id: true, name: true } },
+                    project: { select: { id: true, name: true } }
                 }
             }),
             // TRANSACTIONS - Minimal fields
@@ -112,8 +112,8 @@ export const getDashboardStats = cache(async function getDashboardStats() {
                     invoiceNumber: true,
                     totalAmount: true,
                     createdAt: true,
-                    customer: { where: { isDeleted: false },  select: { id: true, name: true } },
-                    project: { where: { isDeleted: false },  select: { id: true, name: true } }
+                    customer: { select: { id: true, name: true } },
+                    project: { select: { id: true, name: true } }
                 }
             }),
             // ONGOING PROJECTS - Optimized nested includes
@@ -154,8 +154,7 @@ export const getDashboardStats = cache(async function getDashboardStats() {
                         where: { isDeleted: false,  type: 'Expense' },
                         select: { amount: true, category: true }
                     },
-                    linkedProposal: { where: { isDeleted: false },
-                        select: {
+                    linkedProposal: { select: {
                             jobAssignments: { where: { isDeleted: false },
                                 select: { paymentHistory: true }
                             }

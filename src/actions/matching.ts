@@ -300,7 +300,7 @@ export async function matchProduct(name: string, supplierId?: string | null) {
             type: 'approved'
         },
         orderBy: { createdAt: 'desc' },
-        include: { product: { where: { isDeleted: false } } }
+        include: { product: true }
     });
 
     if (feedbackMatch && feedbackMatch.product) {
@@ -319,7 +319,7 @@ export async function matchProduct(name: string, supplierId?: string | null) {
             type: 'corrected'
         },
         orderBy: { createdAt: 'desc' },
-        include: { product: { where: { isDeleted: false } } }
+        include: { product: true }
     });
 
     if (correctedMatch && correctedMatch.product) {

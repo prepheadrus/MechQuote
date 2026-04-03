@@ -69,8 +69,7 @@ export async function getMasterAnalytics(): Promise<{ success: boolean; data?: M
         const projects = await prisma.project.findMany({ where: { isDeleted: false },
             include: {
                 customer: true,
-                linkedProposal: { where: { isDeleted: false },
-                    include: {
+                linkedProposal: { include: {
                         items: { where: { isDeleted: false } },
                         jobAssignments: { where: { isDeleted: false },
                             include: { personnel: { } }
@@ -106,7 +105,7 @@ export async function getMasterAnalytics(): Promise<{ success: boolean; data?: M
             },
             include: {
                 personnel: true,
-                proposal: { where: { isDeleted: false },  select: { projectId: true } }
+                proposal: { select: { projectId: true } }
             }
         });
 

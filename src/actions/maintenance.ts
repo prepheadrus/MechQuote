@@ -265,7 +265,7 @@ export async function fullReconcileCustomerBalances() {
 
             // 3. Recreate transactions from ALL invoices (CORRECTED: Different types)
             const invoices = await tx.invoice.findMany({ where: { isDeleted: false },
-                include: { customer: { where: { isDeleted: false } } }
+                include: { customer: true }
             });
 
             let invoiceTxCount = 0;

@@ -13,7 +13,7 @@ export async function getProjectTransactions(projectId: string) {
     try {
         const transactions = await prisma.projectExpense.findMany({
             where: { isDeleted: false,  projectId },
-            include: { supplier: { where: { isDeleted: false },  select: { name: true } } },
+            include: { supplier: { select: { name: true } } },
             orderBy: { date: 'desc' }
         });
         return { success: true, data: transactions };

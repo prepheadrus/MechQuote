@@ -39,10 +39,9 @@ export async function getPersonnel() {
                 assignments: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     include: {
-                        proposal: {
-                            where: { isDeleted: false }, // ✅ Nested filtre
+                        proposal: { // ✅ Nested filtre
                             include: {
-                                project: { where: { isDeleted: false } }, // Tekil ilişki - where desteklenmiyor
+                                project: true, // Tekil ilişki - where desteklenmiyor
                                 customer: true // Tekil ilişki - where desteklenmiyor
                             }
                         }
@@ -51,8 +50,7 @@ export async function getPersonnel() {
                 transactions: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     include: {
-                        project: { where: { isDeleted: false },
-                            select: { name: true }
+                        project: { select: { name: true }
                         }
                     },
                     orderBy: { date: 'desc' }
@@ -94,8 +92,7 @@ export async function getPersonnelById(id: string) {
                 assignments: {
                     where: { isDeleted: false }, // ✅ Soft delete filtresi
                     include: {
-                        proposal: {
-                            where: { isDeleted: false }, // ✅ Nested filtre
+                        proposal: { // ✅ Nested filtre
                             include: {
                                 customer: true // Tekil ilişki - where desteklenmiyor
                             }
@@ -183,8 +180,7 @@ export async function getPersonnelTransactions(personnelId: string) {
         const transactions = await extendedPrisma.personnelTransaction.findMany({
             where: { personnelId },
             include: {
-                project: { where: { isDeleted: false },
-                    select: { name: true }
+                project: { select: { name: true }
                 }
             },
             orderBy: { date: 'desc' }

@@ -168,8 +168,8 @@ export const getCashBookEntries = cache(async function getCashBookEntries() {
                 include: {
                     invoice: {
                         include: {
-                            customer: { where: { isDeleted: false },  select: { name: true } },
-                            project: { where: { isDeleted: false },  select: { name: true } }
+                            customer: { select: { name: true } },
+                            project: { select: { name: true } }
                         }
                     }
                 }
@@ -179,7 +179,7 @@ export const getCashBookEntries = cache(async function getCashBookEntries() {
                 where: { isDeleted: false }, // ✅ Soft delete filtresi
                 include: {
                     project: {
-                        include: { customer: { where: { isDeleted: false },  select: { name: true } } }
+                        include: { customer: { select: { name: true } } }
                     },
                     supplier: { select: { name: true } }
                 } as any
@@ -188,9 +188,9 @@ export const getCashBookEntries = cache(async function getCashBookEntries() {
             (prisma as any).jobAssignment.findMany({
                 where: { isDeleted: false },
                 include: {
-                    personnel: { where: { isDeleted: false },  select: { name: true } },
-                    project: { where: { isDeleted: false },  select: { name: true } },
-                    proposal: { where: { isDeleted: false },  select: { quoteNumber: { where: { isDeleted: false } } } }
+                    personnel: { select: { name: true } },
+                    project: { select: { name: true } },
+                    proposal: { select: { quoteNumber: { where: { isDeleted: false } } } }
                 }
             }),
             // 4. Manual Customer Transactions (Payment/Collection)
@@ -211,7 +211,7 @@ export const getCashBookEntries = cache(async function getCashBookEntries() {
                     isDeleted: false
                 },
                 include: {
-                    supplier: { where: { isDeleted: false },  select: { name: true } }
+                    supplier: { select: { name: true } }
                 }
             })
         ]) as [any[], any[], any[], any[], any[]];

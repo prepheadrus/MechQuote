@@ -45,8 +45,7 @@ export async function updateJobAssignmentPayment(assignmentId: string, data: {
             where: { id: assignmentId, isDeleted: false },
             include: {
                 personnel: true,
-                proposal: { where: { isDeleted: false },
-                    select: { projectId: true }
+                proposal: { select: { projectId: true }
                 }
             }
         });
@@ -271,9 +270,8 @@ export async function getJobAssignment(id: string) {
             where: { id, isDeleted: false },
             include: {
                 personnel: true,
-                proposal: { where: { isDeleted: false },
-                    include: {
-                        project: { where: { isDeleted: false } }
+                proposal: { include: {
+                        project: true
                     }
                 }
             }
@@ -290,9 +288,8 @@ export async function getJobAssignments() {
             where: { isDeleted: false },
             include: {
                 personnel: true,
-                proposal: { where: { isDeleted: false },
-                    include: {
-                        project: { where: { isDeleted: false } }
+                proposal: { include: {
+                        project: true
                     }
                 }
             },
