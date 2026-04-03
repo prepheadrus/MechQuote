@@ -67,6 +67,8 @@ export default async function QuotesPage() {
     return (
         <Suspense fallback={<LoadingFallback />}>
             <QuotesPageContent
+                initialProposals={proposals}
+                initialCustomers={customers}
                 initialAnalytics={analytics}
                 initialPersonnel={personnel}
                 initialSettings={settings}
