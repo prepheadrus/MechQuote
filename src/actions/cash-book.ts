@@ -186,11 +186,17 @@ export const getCashBookEntries = cache(async function getCashBookEntries() {
             }),
             // 3. Personnel Payments from JobAssignments (Read paymentHistory field)
             (prisma as any).jobAssignment.findMany({
-                where: { isDeleted: false },
+                where: {
+                    isDeleted: false,
+                    OR: [
+                        { proposalId: null },
+                        { proposal: { isDeleted: false } }
+                    ]
+                },
                 include: {
                     personnel: { select: { name: true } },
                     project: { select: { name: true } },
-                    proposal: { select: { quoteNumber: { where: { isDeleted: false } } } }
+                    proposal: { select: { quoteNumber: true } }
                 }
             }),
             // 4. Manual Customer Transactions (Payment/Collection)
