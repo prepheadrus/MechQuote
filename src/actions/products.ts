@@ -610,14 +610,30 @@ export async function bulkDeleteProducts(ids: string[]) {
 export async function importProductsFromExcel(products: Partial<Product>[]) {
     try {
         await prisma.$transaction(async (tx) => {
+            // Extract all product codes to query them in bulk
+            const productCodes = products
+                .map(p => p.code)
+                .filter((code): code is string => code !== null && code !== undefined && code.trim() !== '');
+
+            // Pre-fetch all existing products with the given codes
+            const existingProductsList = await tx.product.findMany({
+                where: {
+                    code: { in: productCodes },
+                    isDeleted: false
+                }
+            });
+
+            // Map them by code for O(1) lookups
+            const existingProductsMap = new Map<string, Product>();
+            for (const product of existingProductsList) {
+                if (product.code) {
+                    existingProductsMap.set(product.code, product);
+                }
+            }
+
             for (const p of products) {
-                // Check if product exists by code
-                const existing = await tx.product.findFirst({
-                    where: {
-                        code: p.code,
-                        isDeleted: false
-                    }
-                });
+                // Check if product exists by code using the pre-fetched map
+                const existing = p.code ? existingProductsMap.get(p.code) : undefined;
 
                 // Prepare data (remove undefined/nulls if necessary, but prisma handles it well)
                 // We assume 'p' is already formatted correctly by the client
