@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 import { createTemplate, deleteTemplate, createProposalFromTemplate, type TemplateItem } from '@/actions/templates';
-import { getProposals } from '@/actions/proposals';
+import { getProposalList } from '@/actions/proposals';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWorkspace } from '@/components/workspace/workspace-context';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -61,7 +61,7 @@ export default function TemplatesClientPage({ initialTemplates }: { initialTempl
 
     const handleOpenCreate = async () => {
         setIsCreateOpen(true);
-        const result = await getProposals();
+        const result = await getProposalList();
         if (result.success && result.data) {
             setProposals(result.data);
         }

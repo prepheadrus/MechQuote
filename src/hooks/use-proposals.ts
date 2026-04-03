@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
-import { getProposals, createProposal, updateProposal, updateProposalStatus, deleteProposal } from '@/actions/proposals/proposals';
+import { getProposalList, createProposal, updateProposal, updateProposalStatus, deleteProposal } from '@/actions/proposals/proposals';
 import { toast } from '@/hooks/use-toast';
 import { Proposal } from '@prisma/client';
 
@@ -16,7 +16,7 @@ export function useProposals() {
   const query = useQuery<EnrichedProposal[], Error>({
     queryKey: queryKeys.proposals.all,
     queryFn: async () => {
-      const result = await getProposals({}); // Filtreleme için boş obje
+      const result = await getProposalList({}); // Filtreleme için boş obje
       if (!result.success) {
         throw new Error(result.error || 'Teklifler alınamadı');
       }

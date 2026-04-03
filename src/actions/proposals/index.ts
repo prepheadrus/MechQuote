@@ -9,7 +9,7 @@ export type { ProposalStatus } from './proposals';
 
 // Export functions
 export {
-  getProposals,
+  getProposalList,
   getProposalsWithAnalytics,
   getProposal,
   getProposalForPrint,

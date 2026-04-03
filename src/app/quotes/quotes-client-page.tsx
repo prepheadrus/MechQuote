@@ -247,7 +247,7 @@ export function QuotesPageContent({
     const isLoadingPersonnel = false;
     const products: any[] = [];
 
-    // jobAssignments are now nested in proposals from getProposals
+    // jobAssignments are now nested in proposals from getProposalList
     const jobAssignments = useMemo(() => {
         return proposals.flatMap((p: any) => p.jobAssignments || []);
     }, [proposals]);

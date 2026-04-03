@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { AssignmentsPageContent } from './assignments-client-page';
 import { getJobAssignments } from '@/actions/job-assignments';
 import { getPersonnel } from '@/actions/personnel';
-import { getProposals } from '@/actions/proposals';
+import { getProposalList } from '@/actions/proposals';
 
 export const metadata: Metadata = {
   title: 'İş Atamaları',
@@ -13,7 +13,7 @@ export default async function AssignmentsPage() {
   const [assignmentsRes, personnelRes, proposalsRes] = await Promise.all([
     getJobAssignments(),
     getPersonnel(),
-    getProposals()
+    getProposalList()
   ]);
 
   const initialAssignments = assignmentsRes.success ? assignmentsRes.data || [] : [];
