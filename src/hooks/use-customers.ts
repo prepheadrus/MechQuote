@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
-import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from '@/actions/customers';
+import { getCustomerList, createCustomer, updateCustomer, deleteCustomer } from '@/actions/customers';
 import { toast } from '@/hooks/use-toast';
 import { Customer } from '@prisma/client';
 
@@ -16,7 +16,7 @@ export function useCustomers() {
   const query = useQuery<EnrichedCustomer[], Error>({
     queryKey: queryKeys.customers.all,
     queryFn: async () => {
-      const result = await getCustomers();
+      const result = await getCustomerList();
       if (!result.success) {
         throw new Error(result.error || 'Müşteriler alınamadı');
       }

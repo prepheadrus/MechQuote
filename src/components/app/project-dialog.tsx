@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Check, ChevronsUpDown, Search } from 'lucide-react';
 import { addOrUpdateProject } from '@/actions/projects';
-import { getCustomers } from '@/actions/customers';
+import { getCustomerList } from '@/actions/customers';
 import { Project } from '@prisma/client';
 import { cn } from "@/lib/utils";
 import {
@@ -82,7 +82,7 @@ export function ProjectDialog({ isOpen, onClose, proposalData, projectToEdit, on
                 setCustomerId(proposalData.customerId);
             } else {
                 // New Project Mode - Fetch Customers
-                getCustomers().then(res => {
+                getCustomerList().then(res => {
                     if (res.success && res.data) {
                         setCustomers(res.data);
                     }
