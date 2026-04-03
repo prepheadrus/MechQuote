@@ -149,13 +149,13 @@ async function revertCustomerTransactionOnCancel(tx: any, proposal: any) {
     } else {
         // No project: Manual cleanup
         await tx.customerTransaction.updateMany({
-    where: {
+            where: {
                 referenceId: proposal.id,
                 referenceType: 'Proposal',
                 type: 'Debt'
             },
-    data: { isDeleted: true, deletedAt: new Date() }
-});
+            data: { isDeleted: true, deletedAt: new Date() }
+        });
 
         await tx.customer.update({
             where: { id: proposal.customerId },
@@ -817,9 +817,8 @@ export async function updateProposalItems(
                         proposalId,
                         // groupDescription'ı manuel ekle (Prisma Client'da henüz yok)
                         ...(groupDescription ? { groupDescription } : {})
-                    },
-    data: { isDeleted: true, deletedAt: new Date() }
-});
+                    }
+                });
             }
 
             // Recalculate total amount

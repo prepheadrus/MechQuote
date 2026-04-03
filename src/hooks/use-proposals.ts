@@ -3,9 +3,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
 import { getProposals, createProposal, updateProposal, updateProposalStatus, deleteProposal } from '@/actions/proposals/proposals';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Proposal } from '@prisma/client';
-import { ProposalStatus } from '@/types/proposal';
+import { ProposalStatus } from '@/actions/proposals/proposals';
 
 type EnrichedProposal = Proposal & { /*... any other client-side fields ...*/ };
 
@@ -40,8 +40,9 @@ export function useProposals() {
                 version: 1,
                 status: 'Draft',
                 totalAmount: 0,
-                // ...diğer zorunlu alanlar için varsayılan değerler
-            } as EnrichedProposal;
+                isDeleted: false,
+                deletedAt: null
+            } as unknown as EnrichedProposal;
             return old ? [...old, optimisticProposal] : [optimisticProposal];
         });
         return { previousProposals };

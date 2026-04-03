@@ -1994,7 +1994,7 @@ export function QuoteDetailClientPage({
 
             // Invalidate React Query cache to ensure list page shows fresh data
             queryClient.invalidateQueries({ queryKey: queryKeys.proposals.all });
-            queryClient.invalidateQueries({ queryKey: queryKeys.proposals.detail(proposalId) });
+            queryClient.invalidateQueries({ queryKey: [queryKeys.proposals.all[0], 'detail', proposalId] });
 
             toast({
                 title: 'Başarılı!',

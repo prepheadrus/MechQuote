@@ -45,7 +45,7 @@ export async function getCachedAIResult(
     // Süresi dolmuş mu kontrol et
     if (cached.expiresAt < new Date()) {
       // Cache'i sil
-      await prisma.aICache.update({ where: { id: cached.id } });
+      await prisma.aICache.update({ where: { id: cached.id }, data: { isDeleted: true, deletedAt: new Date() } });
       logger.warn(`Cache EXPIRED: ${fileHash.substring(0, 16)}... (${fileType})`);
       await prisma.auditLog.create({
         data: {
@@ -151,11 +151,15 @@ export async function cacheAIResult(
 export async function cleanupExpiredCache(): Promise<number> {
   try {
     const deleted = await prisma.aICache.updateMany({
-    where: {
+      where: {
         expiresAt: {
           lt: new Date(),
         },
       },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date()
+      }
     });
 
     logger.info(`🧹 ${deleted.count} expired cache entries deleted`);

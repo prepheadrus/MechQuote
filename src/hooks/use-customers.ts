@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
 import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from '@/actions/customers';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Customer } from '@prisma/client';
 
 type EnrichedCustomer = Customer & { /*... any other client-side fields ...*/ };
@@ -36,7 +36,7 @@ export function useCustomers() {
 
       // Cache'i anında yeni müşteri ile güncelle (optimistic)
       queryClient.setQueryData<EnrichedCustomer[]>(queryKeys.customers.all, (old) => {
-        const optimisticCustomer: EnrichedCustomer = {
+        const optimisticCustomer = {
           ...newCustomerData,
           id: `temp-${Date.now()}`, // Geçici ID
           createdAt: new Date(),
