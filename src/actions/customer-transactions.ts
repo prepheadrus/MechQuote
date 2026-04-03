@@ -126,26 +126,38 @@ export async function deleteTransaction(transactionId: string) {
 export async function deleteTransactionByReference(referenceId: string) {
     try {
         const transactions = await db.customerTransaction.findMany({
-            where: { referenceId }
+            where: { referenceId, isDeleted: false }
         });
 
         if (transactions.length === 0) return { success: true }; // Nothing to delete
 
-        await db.$transaction(async (tx: any) => {
-            for (const transaction of transactions) {
-                // Reverse balance
+        // Map aggregation to combine decrements per customer
+        const customerBalanceDecrements = new Map<string, number>();
+        for (const transaction of transactions) {
+            const currentDecrement = customerBalanceDecrements.get(transaction.customerId) || 0;
+            customerBalanceDecrements.set(transaction.customerId, currentDecrement + transaction.amount);
+        }
+
+        const transactionIds = transactions.map(t => t.id);
+
+        await db.$transaction(async (tx) => {
+            // Update customer balances with aggregated amounts
+            for (const [customerId, totalDecrement] of customerBalanceDecrements.entries()) {
                 await tx.customer.update({
-                    where: { id: transaction.customerId },
+                    where: { id: customerId },
                     data: {
                         balance: {
-                            decrement: transaction.amount
+                            decrement: totalDecrement
                         }
                     }
                 });
-
-                // Delete transaction
-                await tx.customerTransaction.update({ where: { id: transaction.id }, data: { isDeleted: true, deletedAt: new Date() } });
             }
+
+            // Bulk soft-delete transactions
+            await tx.customerTransaction.updateMany({
+                where: { id: { in: transactionIds } },
+                data: { isDeleted: true, deletedAt: new Date() }
+            });
         });
 
         revalidatePath('/customers');
