@@ -9,7 +9,9 @@ import {
     CreateProductSchema,
     TransactionFormSchema,
     NewQuoteFormSchema,
+    validateWithSchema,
 } from '@/lib/validators';
+import { z } from 'zod';
 
 describe('Validators', () => {
     describe('CreateCustomerSchema', () => {
@@ -165,6 +167,52 @@ describe('Validators', () => {
 
             const result = NewQuoteFormSchema.safeParse(invalidData);
             expect(result.success).toBe(false);
+        });
+    });
+
+    describe('validateWithSchema', () => {
+        const TestSchema = z.object({
+            name: z.string().min(3, 'İsim en az 3 karakter olmalıdır'),
+            age: z.number().positive('Yaş pozitif olmalıdır'),
+        });
+
+        it('should return success and data for valid input', () => {
+            const validData = {
+                name: 'Ahmet',
+                age: 25,
+            };
+
+            const result = validateWithSchema(TestSchema, validData);
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.data).toEqual(validData);
+            }
+        });
+
+        it('should return error message for invalid input', () => {
+            const invalidData = {
+                name: 'Al', // Too short
+                age: 25,
+            };
+
+            const result = validateWithSchema(TestSchema, invalidData);
+            expect(result.success).toBe(false);
+            if (!result.success) {
+                expect(result.error).toBe('İsim en az 3 karakter olmalıdır');
+            }
+        });
+
+        it('should return error for invalid data type', () => {
+            const invalidData = {
+                name: 'Ahmet',
+                age: -5, // Negative age
+            };
+
+            const result = validateWithSchema(TestSchema, invalidData);
+            expect(result.success).toBe(false);
+            if (!result.success) {
+                expect(result.error).toBe('Yaş pozitif olmalıdır');
+            }
         });
     });
 });
