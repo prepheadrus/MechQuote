@@ -85,13 +85,13 @@ const formatCurrency = (amount: number, currency = 'TRY') => {
   }
 };
 
-interface ProductsClientPageProps {
-  initialSuppliers: Supplier[];
-  initialCategories: InstallationType[];
-  initialAnalytics: ProductAnalytics | null;
+export interface ProductsClientPageProps {
+  initialSuppliers?: Supplier[];
+  initialCategories?: InstallationType[];
+  initialAnalytics?: ProductAnalytics | null;
 }
 
-export function ProductsPageContent({ initialSuppliers, initialCategories, initialAnalytics }: ProductsClientPageProps) {
+export function ProductsPageContent({ initialSuppliers = [], initialCategories = [], initialAnalytics = null }: ProductsClientPageProps) {
   const { toast } = useToast();
   const router = useRouter();
 

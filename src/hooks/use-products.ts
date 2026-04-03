@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
 import { getProducts, createProduct, updateProduct, deleteProduct } from '@/actions/products';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Product } from '@prisma/client';
 
 // Ürün verilerini ve mutasyonlarını yönetmek için merkezi hook

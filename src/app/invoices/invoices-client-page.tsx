@@ -573,7 +573,7 @@ export function InvoicesClientPage({ initialInvoices }: InvoicesClientPageProps)
                         <FileDown className="h-4 w-4" />
                         Excel'e Aktar
                     </Button>
-                    <ReturnInvoiceDialog onInvoiceCreated={handleActionSuccess} />
+                    <ReturnInvoiceDialog onInvoiceCreated={() => {}} />
                     <RepairProductsButton />
                     <Button onClick={() => document.getElementById('uploader-section')?.scrollIntoView({ behavior: 'smooth' })}>
                         <Plus className="mr-2 h-4 w-4" />
@@ -607,7 +607,7 @@ export function InvoicesClientPage({ initialInvoices }: InvoicesClientPageProps)
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <InvoiceUploader onUploadComplete={handleActionSuccess} />
+                            <InvoiceUploader onUploadComplete={() => {}} />
                         </CardContent>
                     </Card>
 
@@ -721,7 +721,7 @@ export function InvoicesClientPage({ initialInvoices }: InvoicesClientPageProps)
                                                     {invoice.items?.some((i: any) => !i.linkedProductId) && (
                                                         <InvoiceDetailDialog
                                                             invoice={invoice}
-                                                            onInvoiceUpdate={handleActionSuccess}
+                                                            onInvoiceUpdate={() => {}}
                                                             trigger={
                                                                 <Button variant="outline" size="sm" className="h-8 gap-1 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 dark:bg-amber-900/20 dark:border-amber-900/50 dark:text-amber-400">
                                                                     <RotateCcw className="h-3.5 w-3.5" />
@@ -730,7 +730,7 @@ export function InvoicesClientPage({ initialInvoices }: InvoicesClientPageProps)
                                                             }
                                                         />
                                                     )}
-                                                    <InvoiceDetailDialog invoice={invoice} onInvoiceUpdate={handleActionSuccess} />
+                                                    <InvoiceDetailDialog invoice={invoice} onInvoiceUpdate={() => {}} />
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
@@ -816,7 +816,7 @@ export function InvoicesClientPage({ initialInvoices }: InvoicesClientPageProps)
                                             </div>
                                             <div className="font-bold text-sm mr-4">{invoice.totalAmount?.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} {invoice.currency}</div>
                                             <div className="flex items-center gap-1">
-                                                <InvoiceDetailDialog invoice={invoice} onInvoiceUpdate={handleActionSuccess} />
+                                                <InvoiceDetailDialog invoice={invoice} onInvoiceUpdate={() => {}} />
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(invoice.id)}>
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
@@ -873,7 +873,7 @@ export function InvoicesClientPage({ initialInvoices }: InvoicesClientPageProps)
                                                 {invoice.totalAmount?.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} {invoice.currency}
                                             </div>
                                             <div className="flex items-center gap-1">
-                                                <InvoiceDetailDialog invoice={invoice} onInvoiceUpdate={handleActionSuccess} />
+                                                <InvoiceDetailDialog invoice={invoice} onInvoiceUpdate={() => {}} />
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(invoice.id)}>
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>

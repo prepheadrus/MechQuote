@@ -3,9 +3,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
 import { getProposals, createProposal, updateProposal, updateProposalStatus, deleteProposal } from '@/actions/proposals/proposals';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Proposal } from '@prisma/client';
-import { ProposalStatus } from '@/types/proposal';
 
 type EnrichedProposal = Proposal & { /*... any other client-side fields ...*/ };
 
@@ -41,7 +40,7 @@ export function useProposals() {
                 status: 'Draft',
                 totalAmount: 0,
                 // ...diğer zorunlu alanlar için varsayılan değerler
-            } as EnrichedProposal;
+            } as unknown as EnrichedProposal;
             return old ? [...old, optimisticProposal] : [optimisticProposal];
         });
         return { previousProposals };
@@ -88,7 +87,7 @@ export function useProposals() {
 
   // Teklif durumunu güncelleyen mutation
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string, status: ProposalStatus }) => updateProposalStatus(id, status),
+    mutationFn: ({ id, status }: { id: string, status: any }) => updateProposalStatus(id, status),
     onMutate: async ({ id, status }) => {
         await queryClient.cancelQueries({ queryKey: queryKeys.proposals.all });
         const previousProposals = queryClient.getQueryData<EnrichedProposal[]>(queryKeys.proposals.all);

@@ -817,9 +817,8 @@ export async function updateProposalItems(
                         proposalId,
                         // groupDescription'ı manuel ekle (Prisma Client'da henüz yok)
                         ...(groupDescription ? { groupDescription } : {})
-                    },
-    data: { isDeleted: true, deletedAt: new Date() }
-});
+                    }
+                });
             }
 
             // Recalculate total amount
