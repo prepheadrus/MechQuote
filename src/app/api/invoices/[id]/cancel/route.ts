@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cancelInvoice } from '@/actions/invoices';
-// import { getCurrentUser } from '@/lib/auth'; // Opsiyonel - auth varsa
 
 /**
  * POST /api/invoices/[id]/cancel
@@ -42,8 +41,6 @@ export async function POST(
             );
         }
 
-        // Get current user (if auth is enabled)
-        // const user = await getCurrentUser();
         const user = { id: 'system', name: 'System' }; // Temporary
 
         // Call server action
