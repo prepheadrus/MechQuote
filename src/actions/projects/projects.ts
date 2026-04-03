@@ -469,8 +469,7 @@ export async function getProject(id: string) {
                         invoiceDate: true,
                         senderName: true,
                         receiverName: true,
-                        customer: { where: { isDeleted: false },
-                            select: { name: true }
+                        customer: { select: { name: true }
                         }
                     }
                 }
