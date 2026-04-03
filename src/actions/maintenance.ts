@@ -260,12 +260,16 @@ export async function fullReconcileCustomerBalances() {
             const deletedTxs = await tx.customerTransaction.updateMany({ data: { isDeleted: true, deletedAt: new Date() } });
             logs.push(`Deleted ${deletedTxs.count} existing transactions.`);
 
+            // Aggregated customer balances map
+            const customerBalances = new Map<string, number>();
+
             // 3. Recreate transactions from ALL invoices (CORRECTED: Different types)
             const invoices = await tx.invoice.findMany({ where: { isDeleted: false },
                 include: { customer: { where: { isDeleted: false } } }
             });
 
             let invoiceTxCount = 0;
+            const invoiceTransactions = [];
             for (const invoice of invoices) {
                 if (invoice.customerId) {
                     // CORRECTED: Outgoing = Debt (positive), Incoming = Credit (negative)
@@ -274,27 +278,30 @@ export async function fullReconcileCustomerBalances() {
                         ? invoice.totalAmount  // Positive: customer owes us
                         : -invoice.totalAmount; // Negative: we owe supplier
 
-                    await tx.customerTransaction.create({
-                        data: {
-                            customerId: invoice.customerId,
-                            amount: signedAmount,
-                            type: type,
-                            description: `Fatura: ${invoice.invoiceNumber} (${invoice.type === 'Outgoing' ? 'Satış' : 'Alış'})`,
-                            referenceId: invoice.id,
-                            referenceType: 'Invoice',
-                            category: invoice.type === 'Outgoing' ? 'Sales' : 'Purchase',
-                            date: invoice.invoiceDate
-                        }
+                    invoiceTransactions.push({
+                        customerId: invoice.customerId,
+                        amount: signedAmount,
+                        type: type,
+                        description: `Fatura: ${invoice.invoiceNumber} (${invoice.type === 'Outgoing' ? 'Satış' : 'Alış'})`,
+                        referenceId: invoice.id,
+                        referenceType: 'Invoice',
+                        category: invoice.type === 'Outgoing' ? 'Sales' : 'Purchase',
+                        date: invoice.invoiceDate
                     });
 
-                    // Update customer balance immediately
-                    await tx.customer.update({
-                        where: { id: invoice.customerId },
-                        data: { balance: { increment: signedAmount } }
-                    });
+                    customerBalances.set(
+                        invoice.customerId,
+                        (customerBalances.get(invoice.customerId) || 0) + signedAmount
+                    );
 
                     invoiceTxCount++;
                 }
+            }
+
+            if (invoiceTransactions.length > 0) {
+                await tx.customerTransaction.createMany({
+                    data: invoiceTransactions
+                });
             }
             logs.push(`Created ${invoiceTxCount} transactions from invoices.`);
 
@@ -304,32 +311,46 @@ export async function fullReconcileCustomerBalances() {
             });
 
             let proposalTxCount = 0;
+            const proposalTransactions = [];
             for (const proposal of proposals) {
                 if (proposal.customerId) {
                     const signedAmount = proposal.totalAmount; // Positive = increases balance
 
-                    await tx.customerTransaction.create({
-                        data: {
-                            customerId: proposal.customerId,
-                            amount: signedAmount,
-                            type: 'Debt',
-                            description: `Teklif Onayı: ${proposal.quoteNumber} - ${proposal.projectName}`,
-                            referenceId: proposal.id,
-                            referenceType: 'Proposal',
-                            category: 'Sales',
-                            date: proposal.createdAt
-                        }
+                    proposalTransactions.push({
+                        customerId: proposal.customerId,
+                        amount: signedAmount,
+                        type: 'Debt',
+                        description: `Teklif Onayı: ${proposal.quoteNumber} - ${proposal.projectName}`,
+                        referenceId: proposal.id,
+                        referenceType: 'Proposal',
+                        category: 'Sales',
+                        date: proposal.createdAt
                     });
 
-                    await tx.customer.update({
-                        where: { id: proposal.customerId },
-                        data: { balance: { increment: signedAmount } }
-                    });
+                    customerBalances.set(
+                        proposal.customerId,
+                        (customerBalances.get(proposal.customerId) || 0) + signedAmount
+                    );
 
                     proposalTxCount++;
                 }
             }
+
+            if (proposalTransactions.length > 0) {
+                await tx.customerTransaction.createMany({
+                    data: proposalTransactions
+                });
+            }
             logs.push(`Created ${proposalTxCount} transactions from proposals.`);
+
+            // 5. Bulk update customer balances
+            for (const [customerId, increment] of customerBalances.entries()) {
+                await tx.customer.update({
+                    where: { id: customerId },
+                    data: { balance: { increment } }
+                });
+            }
+            logs.push(`Bulk updated balances for ${customerBalances.size} customers.`);
         });
 
         logs.push('Full reconciliation completed successfully.');
