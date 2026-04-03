@@ -73,7 +73,6 @@ export function usePersonnel() {
     onSuccess: (data, { id }) => {
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: queryKeys.personnel.all });
-        queryClient.invalidateQueries({ queryKey: queryKeys.personnel.detail(id) });
       }
     },
   });
@@ -122,7 +121,7 @@ export function usePersonnel() {
  */
 export function usePersonnelMember(id: string) {
   const query = useQuery({
-    queryKey: queryKeys.personnel.detail(id),
+    queryKey: [...queryKeys.personnel.all, id],
     queryFn: () => {
       return getPersonnel().then((res) => {
         if (!res.success || !res.data) return null;

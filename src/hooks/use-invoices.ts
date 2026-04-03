@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
 import { getInvoices, createInvoice, deleteInvoice } from '@/actions/invoices';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Invoice } from '@prisma/client';
 
 type EnrichedInvoice = Invoice & { /*... any other client-side fields ...*/ };
@@ -39,7 +39,7 @@ export function useInvoices() {
                 updatedAt: new Date(),
                 status: 'Draft',
                 // ...diğer zorunlu alanlar
-            } as EnrichedInvoice;
+            } as unknown as EnrichedInvoice;
             return old ? [...old, optimisticInvoice] : [optimisticInvoice];
         });
         return { previousInvoices };

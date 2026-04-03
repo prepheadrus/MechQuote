@@ -33,6 +33,7 @@ import { SmartProposalImporter } from '@/components/app/smart-proposal-importer'
 import { useWorkspace } from '@/components/workspace/workspace-context';
 import { useProposals } from '@/hooks/use-proposals';
 import { useCustomers } from '@/hooks/use-customers';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -95,7 +96,7 @@ export function QuotesPageContent({ initialPersonnel = [], initialSettings = nul
 
     // --- Data Fetching with React Query ---
     const { proposals, isLoading: isLoadingProposals, createProposal, updateProposalStatus, deleteProposal } = useProposals();
-    const { customers, isLoading: isLoadingCustomers } = useCustomers();
+    const { customers, isLoading: isLoadingCustomers, error: customersError } = useCustomers();
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -146,11 +147,12 @@ export function QuotesPageContent({ initialPersonnel = [], initialSettings = nul
             customerName: selectedCustomer.name,
             projectName: values.projectName,
             projectId: values.projectId,
+            quoteNumber: `TKL-${Date.now()}`,
             // quoteNumber and other fields are handled by the backend action
             items: initialItems,
         };
         
-        const result = await createProposal(newProposalData);
+        const result = await createProposal(newProposalData as any);
         if (result.success && result.data) {
             setIsDialogOpen(false);
             form.reset();
@@ -193,7 +195,7 @@ export function QuotesPageContent({ initialPersonnel = [], initialSettings = nul
         setIsRenaming(true);
         try {
             // This needs to be a mutation from a `useProposals` hook
-            await updateProposal({ id: proposalToRename.id, data: { projectName: newProjectName } });
+            await updateProposal(proposalToRename.id, { projectName: newProjectName } as any);
             setIsRenameDialogOpen(false);
         } catch (error: any) {
             // Error handled by hook

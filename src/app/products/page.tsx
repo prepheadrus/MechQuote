@@ -7,11 +7,6 @@ export default async function ProductsPage() {
     const { data } = await getProductAnalytics();
 
     return (
-        <ProductsPageContent
-            initialProducts={data?.products || []}
-            initialSuppliers={data?.suppliers || []}
-            initialCategories={data?.categories || []}
-            initialAnalytics={data?.analytics || null}
-        />
+        <ProductsPageContent />
     );
 }

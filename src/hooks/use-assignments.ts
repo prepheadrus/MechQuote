@@ -73,7 +73,6 @@ export function useAssignments() {
     onSuccess: (data, { id }) => {
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: queryKeys.assignments.all });
-        queryClient.invalidateQueries({ queryKey: queryKeys.assignments.detail(id) });
       }
     },
   });
@@ -122,7 +121,7 @@ export function useAssignments() {
  */
 export function useAssignment(id: string) {
   const query = useQuery({
-    queryKey: queryKeys.assignments.detail(id),
+    queryKey: [...queryKeys.assignments.all, id],
     queryFn: () => {
       return getJobAssignments().then((res) => {
         if (!res.success || !res.data) return null;
