@@ -299,21 +299,24 @@ export async function restoreSystemData(jsonData: any) {
             }
 
             // f. RECONCILIATION: Recalculate customer balances based on transactions
-            const allCustomers = await tx.customer.findMany({ select: { id: true } });
-            for (const customer of allCustomers) {
-                const transactions = await tx.customerTransaction.findMany({
-                    where: { customerId: customer.id },
-                    select: { amount: true }
-                });
+            const transactionSums = await tx.customerTransaction.groupBy({
+                by: ['customerId'],
+                _sum: {
+                    amount: true,
+                },
+            });
 
-                if (transactions.length > 0) {
-                    const newBalance = transactions.reduce((sum, t) => sum + t.amount, 0);
-                    await tx.customer.update({
-                        where: { id: customer.id },
-                        data: { balance: newBalance }
-                    });
-                }
-            }
+            await Promise.all(
+                transactionSums.map((ts) => {
+                    if (ts.customerId && ts._sum.amount !== null) {
+                        return tx.customer.update({
+                            where: { id: ts.customerId },
+                            data: { balance: ts._sum.amount },
+                        });
+                    }
+                    return Promise.resolve();
+                })
+            );
 
             return { success: true };
         });
