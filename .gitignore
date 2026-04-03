@@ -16,4 +16,4 @@ src/data/*.json
 
 # Çevresel Değişkenler
 .env
-.env.*
+.env.*coverage/
