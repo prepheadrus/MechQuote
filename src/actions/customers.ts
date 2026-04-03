@@ -28,14 +28,6 @@ interface LedgerEntry {
     balance?: number;
 }
 
-/**
- * Get customer list
- * @deprecated Use getCustomerList instead
- */
-export async function getCustomers() {
-    return getCustomerList();
-}
-
 export async function getCustomerList() {
     try {
         // Güvenlik kontrolü
@@ -59,14 +51,6 @@ export async function getCustomerList() {
         logger.error('Failed to fetch customers:', error);
         return { success: false, error: 'Müşteriler yüklenirken bir hata oluştu.' };
     }
-}
-
-/**
- * Get customer statistics
- * @deprecated Use getCustomerStats instead
- */
-export async function getCustomersWithStats() {
-    return getCustomerStats();
 }
 
 export async function getCustomerStats() {

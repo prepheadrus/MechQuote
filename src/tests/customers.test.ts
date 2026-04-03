@@ -98,6 +98,7 @@ describe('Customers Actions', () => {
             expect(result.success).toBe(true);
             expect(result.data).toHaveLength(2);
             expect(prisma.customer.findMany).toHaveBeenCalledWith({
+                where: { isDeleted: false },
                 orderBy: { createdAt: 'desc' },
             });
         });
@@ -248,15 +249,29 @@ describe('Customers Actions', () => {
             expect(result.success).toBe(true);
             expect(result.data?.id).toBe('1');
             expect(prisma.customer.findFirst).toHaveBeenCalledWith({
-                where: { id: '1' },
+                where: { id: '1', isDeleted: false },
                 include: {
-                    proposals: { orderBy: { createdAt: 'desc' } },
-                    invoices: { orderBy: { invoiceDate: 'desc' } },
-                    projects: {
-                        orderBy: { createdAt: 'desc' },
-                        include: { transactions: true },
+                    proposals: {
+                        where: { isDeleted: false },
+                        orderBy: { createdAt: 'desc' }
                     },
-                    transactions: { orderBy: { date: 'desc' } },
+                    invoices: {
+                        where: { isDeleted: false },
+                        orderBy: { invoiceDate: 'desc' }
+                    },
+                    projects: {
+                        where: { isDeleted: false },
+                        orderBy: { createdAt: 'desc' },
+                        include: {
+                            transactions: {
+                                where: { isDeleted: false }
+                            }
+                        }
+                    },
+                    transactions: {
+                        where: { isDeleted: false },
+                        orderBy: { date: 'desc' }
+                    }
                 },
             });
         });
