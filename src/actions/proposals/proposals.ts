@@ -181,17 +181,6 @@ type ProposalWithItems = Proposal & {
     items: ProposalItem[];
 };
 
-/**
- * Get proposal list
- * @deprecated Use getProposalList instead
- */
-export async function getProposals(filters?: {
-    status?: ProposalStatus;
-    customerId?: string;
-}) {
-    return getProposalList(filters);
-}
-
 export async function getProposalList(filters?: {
     status?: ProposalStatus;
     customerId?: string;

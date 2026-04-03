@@ -3,7 +3,7 @@ import { KanbanClientPage } from './kanban-client-page';
 import { Button } from '@/components/ui/button';
 import { PlusIcon, LayoutListIcon } from 'lucide-react';
 import Link from 'next/link';
-import { getProposals } from '@/actions/proposals';
+import { getProposalList } from '@/actions/proposals';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function KanbanPage() {
-    const result = await getProposals();
+    const result = await getProposalList();
     const proposals = result.success ? (result.data || []) : [];
 
     return (
