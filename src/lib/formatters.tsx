@@ -66,15 +66,14 @@ export const getStatusBadge = (status: string) => {
 };
 
 export const formatCurrency = (amount: number | null | undefined, currency = 'TRY'): string => {
-    if (typeof amount !== 'number') {
-        amount = 0;
+    if (amount == null) {
+        return '-';
     }
     const validCurrency = currency.toUpperCase() === 'TL' ? 'TRY' : currency;
     return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: validCurrency }).format(amount);
 };
 
 export const CurrencyDisplay = ({ amount, currency = 'TRY', className = "" }: { amount: number | null | undefined, currency?: string, className?: string }) => {
-    const formatted = formatCurrency(amount, currency);
     // Split symbol and number for better styling
     const parts = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: currency === 'TL' ? 'TRY' : currency }).formatToParts(amount || 0);
 

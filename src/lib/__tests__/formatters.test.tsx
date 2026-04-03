@@ -150,12 +150,9 @@ describe('formatters', () => {
             expect(formatted).toContain('₺');
         });
 
-        it('should treat null or undefined as 0', () => {
-            const nullFormat = formatCurrency(null).replace(/\s/g, ' ');
-            expect(nullFormat).toContain('0,00');
-
-            const undefinedFormat = formatCurrency(undefined).replace(/\s/g, ' ');
-            expect(undefinedFormat).toContain('0,00');
+        it('should treat null or undefined as "-"', () => {
+            expect(formatCurrency(null)).toBe('-');
+            expect(formatCurrency(undefined)).toBe('-');
         });
 
         it('should accept "TL" and convert it to "TRY"', () => {
