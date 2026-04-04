@@ -22,7 +22,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { getProducts } from '@/actions/products';
+import { getProductList } from '@/actions/products';
 
 interface ProductComboboxProps {
   value: string | null;
@@ -49,7 +49,7 @@ export function ProductCombobox({
   const loadProducts = async () => {
     setLoading(true);
     try {
-      const result = await getProducts();
+      const result = await getProductList();
       if (result.success && result.data) {
         const productList = result.data.map((p: any) => ({
           id: p.id,

@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
-import { getProducts, createProduct, updateProduct, deleteProduct } from '@/actions/products';
+import { getProductList, createProduct, updateProduct, deleteProduct } from '@/actions/products';
 import { toast } from '@/hooks/use-toast';
 import { Product } from '@prisma/client';
 
@@ -14,7 +14,7 @@ export function useProducts() {
   const query = useQuery<Product[], Error>({
     queryKey: queryKeys.products.all,
     queryFn: async () => {
-      const result = await getProducts();
+      const result = await getProductList();
       if (!result.success) {
         throw new Error(result.error || 'Ürünler alınamadı');
       }

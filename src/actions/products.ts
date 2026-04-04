@@ -242,14 +242,6 @@ export async function getProductAnalytics() {
     }
 }
 
-/**
- * Get product list
- * @deprecated Use getProductList instead
- */
-export async function getProducts() {
-    return getProductList();
-}
-
 export async function getProductList() {
     try {
         const products = await prisma.product.findMany({
