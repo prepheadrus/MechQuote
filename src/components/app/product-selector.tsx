@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/resizable";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getProducts } from '@/actions/products';
+import { getProductList } from '@/actions/products';
 import { getInstallationTypes } from '@/actions/installation-types';
 import { Product, InstallationType, Recipe } from '@prisma/client';
 import { Loader2, Search, ChevronRight, ChevronDown, PlusCircle, BookCopy } from 'lucide-react';
@@ -141,7 +141,7 @@ export function ProductSelector({
       setIsLoadingProducts(true);
       setIsLoadingCategories(true);
 
-      getProducts().then(res => {
+      getProductList().then(res => {
         if (res.success && res.data) {
           setAllProducts(res.data);
         }
@@ -258,7 +258,7 @@ export function ProductSelector({
   const handleQuickAddSuccess = () => {
     // Refresh products list
     setIsLoadingProducts(true);
-    getProducts().then(res => {
+    getProductList().then(res => {
       if (res.success && res.data) {
         setAllProducts(res.data);
       }

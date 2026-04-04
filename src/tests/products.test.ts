@@ -44,10 +44,12 @@ jest.mock('@/lib/prisma', () => ({
         supplier: {
             findMany: jest.fn(),
             findUnique: jest.fn(),
+            findFirst: jest.fn(),
         },
         installationType: {
             findMany: jest.fn(),
             findUnique: jest.fn(),
+            findFirst: jest.fn(),
         },
         proposalItem: {
             findMany: jest.fn(),
@@ -445,6 +447,7 @@ describe('Products Actions', () => {
             expect(result.success).toBe(true);
             expect(result.data).toHaveLength(3);
             expect(prisma.product.findMany).toHaveBeenCalledWith({
+                where: { isDeleted: false },
                 orderBy: { createdAt: 'desc' },
             });
         });
@@ -807,21 +810,24 @@ describe('Products Actions', () => {
     describe('deleteProduct', () => {
         it('should delete product successfully - HAPPY PATH', async () => {
             // Arrange
-            (prisma.product.delete as jest.Mock).mockResolvedValue(mockProducts[0]);
+            (prisma.product.update as jest.Mock).mockResolvedValue({ ...mockProducts[0], isDeleted: true });
 
             // Act
             const result = await deleteProduct('1');
 
             // Assert
             expect(result.success).toBe(true);
-            expect(prisma.product.delete).toHaveBeenCalledWith({
-                where: { id: '1' },
-            });
+            expect(prisma.product.update).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: { id: '1' },
+                    data: expect.objectContaining({ isDeleted: true })
+                })
+            );
         });
 
         it('should handle delete error - ERROR HANDLING', async () => {
             // Arrange
-            (prisma.product.delete as jest.Mock).mockRejectedValue(new Error('Delete failed'));
+            (prisma.product.update as jest.Mock).mockRejectedValue(new Error('Delete failed'));
 
             // Act
             const result = await deleteProduct('1');
@@ -835,21 +841,24 @@ describe('Products Actions', () => {
     describe('bulkDeleteProducts', () => {
         it('should delete multiple products - HAPPY PATH', async () => {
             // Arrange
-            (prisma.product.deleteMany as jest.Mock).mockResolvedValue({ count: 3 });
+            (prisma.product.updateMany as jest.Mock).mockResolvedValue({ count: 3 });
 
             // Act
             const result = await bulkDeleteProducts(['1', '2', '3']);
 
             // Assert
             expect(result.success).toBe(true);
-            expect(prisma.product.deleteMany).toHaveBeenCalledWith({
-                where: { id: { in: ['1', '2', '3'] } },
-            });
+            expect(prisma.product.updateMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: { id: { in: ['1', '2', '3'] } },
+                    data: expect.objectContaining({ isDeleted: true })
+                })
+            );
         });
 
         it('should handle bulk delete with empty array - EDGE CASE', async () => {
             // Arrange
-            (prisma.product.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+            (prisma.product.updateMany as jest.Mock).mockResolvedValue({ count: 0 });
 
             // Act
             const result = await bulkDeleteProducts([]);
@@ -860,7 +869,7 @@ describe('Products Actions', () => {
 
         it('should handle bulk delete error - ERROR HANDLING', async () => {
             // Arrange
-            (prisma.product.deleteMany as jest.Mock).mockRejectedValue(new Error('Bulk delete failed'));
+            (prisma.product.updateMany as jest.Mock).mockRejectedValue(new Error('Bulk delete failed'));
 
             // Act
             const result = await bulkDeleteProducts(['1', '2']);

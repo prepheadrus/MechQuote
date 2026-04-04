@@ -13,7 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/formatters";
 import { matchProduct } from '@/actions/matching';
 import { linkInvoiceItemToProduct } from '@/actions/invoices';
-import { getProducts as fetchProducts } from '@/actions/products';
+import { getProductList as fetchProducts } from '@/actions/products';
 import { FeedbackButtons } from './feedback-buttons';
 import { CreateProductFromItemDialog } from './create-product-from-item-dialog';
 import { findBestProductMatch, searchProducts } from '@/services/product-search-service';

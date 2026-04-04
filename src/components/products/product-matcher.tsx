@@ -10,7 +10,7 @@ import { Product, InvoiceItem } from "@prisma/client";
 import { formatCurrency } from "@/lib/formatters";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createProduct, ensureProductInPrisma, getProductDetails, getProducts, updateProduct, addPurchaseHistory, getUniqueCategories } from "@/actions/products";
+import { createProduct, ensureProductInPrisma, getProductDetails, getProductList, updateProduct, addPurchaseHistory, getUniqueCategories } from "@/actions/products";
 import { findSuggestedProductId, getInvoices, linkInvoiceItemToProduct } from "@/actions/invoices";
 import { suggestProductDetails } from "@/actions/matching";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -364,7 +364,7 @@ export function ProductMatcher({ invoiceItem, onMatch }: ProductMatcherProps) {
                 }
 
                 // Get all products from server
-                const res = await getProducts();
+                const res = await getProductList();
                 const candidates = (res.success && res.data ? res.data : []) as Product[];
 
                 // Advanced Token Search with Scoring

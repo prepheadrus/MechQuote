@@ -12,7 +12,7 @@ import { Product } from "@prisma/client";
 import { formatCurrency } from "@/lib/formatters";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createProduct, getProducts, searchProducts } from "@/actions/products";
+import { createProduct, getProductList, searchProducts } from "@/actions/products";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
 
