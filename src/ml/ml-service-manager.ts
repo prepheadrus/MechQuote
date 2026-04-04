@@ -123,10 +123,19 @@ export class MLServiceManager {
    * Check if port is in use
    */
   private async checkPort(port: number): Promise<boolean> {
+    const safePort = parseInt(port.toString(), 10);
+    if (isNaN(safePort)) return false;
+
     return new Promise((resolve) => {
-      const { exec } = require('child_process');
-      exec(`netstat -ano | findstr :${port}`, (error: any, stdout: string) => {
-        resolve(!error && stdout.trim().length > 0);
+      const { execFile } = require('child_process');
+      execFile('netstat', ['-ano'], (error: any, stdout: string) => {
+        if (error) {
+          resolve(false);
+          return;
+        }
+        const lines = stdout.split('\n');
+        const isPortInUse = lines.some(line => line.includes(`:${safePort}`));
+        resolve(isPortInUse);
       });
     });
   }
@@ -151,30 +160,48 @@ export class MLServiceManager {
    * Kill process using a specific port (Windows only)
    */
   private async killPortProcess(port: number): Promise<void> {
+    const safePort = parseInt(port.toString(), 10);
+    if (isNaN(safePort)) return;
+
     return new Promise((resolve) => {
-      const { exec } = require('child_process');
+      const { execFile } = require('child_process');
 
       // Find PID using the port
-      exec(`netstat -ano | findstr :${port}`, (error: any, stdout: string) => {
+      execFile('netstat', ['-ano'], (error: any, stdout: string) => {
         if (error || !stdout.trim()) {
-          console.log(`[ML Service] No process found on port ${port}`);
+          console.log(`[ML Service] No process found on port ${safePort}`);
+          resolve();
+          return;
+        }
+
+        const lines = stdout.split('\n');
+        const portLine = lines.find(line => line.includes(`:${safePort}`) && line.includes('LISTENING'));
+
+        if (!portLine) {
+          console.log(`[ML Service] Could not find LISTENING process for port ${safePort}`);
           resolve();
           return;
         }
 
         // Parse PID from output
-        const match = stdout.match(/LISTENING\s+(\d+)/);
+        const match = portLine.match(/LISTENING\s+(\d+)/);
         if (!match) {
-          console.log(`[ML Service] Could not find PID for port ${port}`);
+          console.log(`[ML Service] Could not find PID for port ${safePort}`);
           resolve();
           return;
         }
 
-        const pid = match[1];
-        console.log(`[ML Service] Killing process ${pid} on port ${port}...`);
+        const pid = parseInt(match[1], 10);
+        if (isNaN(pid)) {
+          console.log(`[ML Service] Invalid PID found for port ${safePort}`);
+          resolve();
+          return;
+        }
+
+        console.log(`[ML Service] Killing process ${pid} on port ${safePort}...`);
 
         // Kill the process
-        exec(`taskkill /F /PID ${pid}`, (killError: any) => {
+        execFile('taskkill', ['/F', '/PID', pid.toString()], (killError: any) => {
           if (killError) {
             console.error(`[ML Service] Failed to kill process ${pid}:`, killError.message);
           } else {
@@ -215,8 +242,8 @@ export class MLServiceManager {
    */
   private async checkPython(): Promise<boolean> {
     return new Promise((resolve) => {
-      const { exec } = require('child_process');
-      exec('python --version', (error: any) => {
+      const { execFile } = require('child_process');
+      execFile('python', ['--version'], (error: any) => {
         resolve(!error);
       });
     });
