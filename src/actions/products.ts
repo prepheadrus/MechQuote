@@ -142,14 +142,6 @@ function calculateAnalytics(
     };
 }
 
-/**
- * Get product analytics
- * @deprecated Use getProductAnalytics instead
- */
-export async function getProductsWithAnalytics() {
-    return getProductAnalytics();
-}
-
 export async function getProductAnalytics() {
     try {
         const [products, suppliers, categories, approvedItems, purchaseItems] = await Promise.all([
