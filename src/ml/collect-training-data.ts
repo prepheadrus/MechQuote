@@ -203,12 +203,21 @@ async function collectTrainingData(): Promise<MatchingPair[]> {
 
   // For rejected items, we need to find what they WERE matched to
   const rejectedItems = allRejected.filter(f => f.originalMatchId !== null);
+
+  // Batch fetch products for rejected items
+  const rejectedProductIds = [...new Set(rejectedItems.map(f => f.originalMatchId).filter(Boolean) as string[])];
+  const rejectedProducts = await prisma.product.findMany({
+    where: {
+      isDeleted: false,
+      id: { in: rejectedProductIds }
+    }
+  });
+  const rejectedProductMap = new Map(rejectedProducts.map(p => [p.id, p]));
+
   for (const feedback of rejectedItems) {
     if (!feedback.originalMatchId) continue;
     
-    const originalProduct = await prisma.product.findFirst({
-      where: { isDeleted: false,  id: feedback.originalMatchId },
-    });
+    const originalProduct = rejectedProductMap.get(feedback.originalMatchId);
     
     if (!originalProduct) continue;
     
@@ -263,13 +272,21 @@ async function collectTrainingData(): Promise<MatchingPair[]> {
     f.product !== null
   );
   
+  // Batch fetch products for corrected items
+  const correctedProductIds = [...new Set(correctedItems.map(f => f.originalMatchId).filter(Boolean) as string[])];
+  const correctedProducts = await prisma.product.findMany({
+    where: {
+      isDeleted: false,
+      id: { in: correctedProductIds }
+    }
+  });
+  const correctedProductMap = new Map(correctedProducts.map(p => [p.id, p]));
+
   for (const feedback of correctedItems) {
     if (!feedback.product || !feedback.originalMatchId) continue;
     
     // Get the original (wrong) product
-    const originalProduct = await prisma.product.findFirst({
-      where: { isDeleted: false,  id: feedback.originalMatchId },
-    });
+    const originalProduct = correctedProductMap.get(feedback.originalMatchId);
     
     if (!originalProduct) continue;
     
