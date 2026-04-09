@@ -55,11 +55,18 @@ export async function getHelpDocs(): Promise<{ success: boolean; data?: HelpDoc[
         }
 
         const files = getFilesRecursively(DOCS_DIR);
-        const docs: HelpDoc[] = files.map(filePath => {
-            const relativePath = path.relative(DOCS_DIR, filePath);
-            const content = fs.readFileSync(filePath, 'utf-8');
-            
-            // Extract title from first H1 if exists
+        const docs: HelpDoc[] = files
+            .filter(filePath => {
+                const resolvedPath = path.resolve(filePath);
+                const resolvedDocsDir = path.resolve(DOCS_DIR);
+                // Ensure the path is within DOCS_DIR and handle potential partial name matches
+                return resolvedPath.startsWith(resolvedDocsDir + path.sep) || resolvedPath === resolvedDocsDir;
+            })
+            .map(filePath => {
+                const relativePath = path.relative(DOCS_DIR, filePath);
+                const content = fs.readFileSync(filePath, 'utf-8');
+
+                // Extract title from first H1 if exists
             const titleMatch = content.match(/^# (.*)/);
             const title = titleMatch ? titleMatch[1] : path.basename(filePath, '.md');
             
